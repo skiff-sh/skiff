@@ -1,0 +1,45 @@
+{
+  "$defs": {
+    "skiff.registry.v1alpha1.File.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "description": "The contents of the file. You do not need to populate this manually.",
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+          "type": "string"
+        },
+        "path": {
+          "description": "The path to the template relative to the root of the registry.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "target": {
+          "description": "The target path of the rendered template relative to the root of the project. Accepts template parameters.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "type": {
+          "description": "The type of the file.",
+          "enum": [
+            "plain",
+            "template",
+            "plugin"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "target",
+        "type"
+      ],
+      "title": "File",
+      "type": "object"
+    }
+  },
+  "$id": "skiff.registry.v1alpha1.File.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/skiff.registry.v1alpha1.File.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

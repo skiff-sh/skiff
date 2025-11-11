@@ -1,0 +1,40 @@
+{
+  "$defs": {
+    "skiff.plugin.v1alpha1.FileSpec.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "description": "The contents of the file",
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+          "type": "string"
+        },
+        "path": {
+          "description": "The path relative to the project root.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "content"
+      ],
+      "title": "File Spec",
+      "type": "object"
+    },
+    "skiff.plugin.v1alpha1.WriteFileRequest.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "$ref": "#/$defs/skiff.plugin.v1alpha1.FileSpec.jsonschema.strict.json",
+          "description": "The file in question to write."
+        }
+      },
+      "title": "Write File Request",
+      "type": "object"
+    }
+  },
+  "$id": "skiff.plugin.v1alpha1.WriteFileRequest.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/skiff.plugin.v1alpha1.WriteFileRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

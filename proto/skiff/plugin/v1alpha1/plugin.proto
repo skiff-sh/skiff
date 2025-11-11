@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package skiff.plugin.v1alpha1;
+
+option go_package = "github.com/skiff-sh/skiff/api/go/skiff/plugin/v1alpha1";
+
+message FileSpec {
+  // The path relative to the project root.
+  string path = 1;
+
+  // The contents of the file
+  bytes content = 2;
+}
+
+message WriteFileRequest {
+  // The file in question to write.
+  FileSpec file = 1;
+}
+
+message WriteFileResponse {
+  // The new contents of the file.
+  bytes contents = 1;
+}
