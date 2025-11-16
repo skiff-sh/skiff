@@ -70,12 +70,6 @@ message Field {
 
   message SubField {
     option (buf.validate.message).cel = {
-      message: 'items required for arrays'
-      id: 'items_required'
-      expression: 'this.type == skiff.registry.v1alpha1.Field.Type.array ? (has(this.items) && has(this.items.type)): true'
-    };
-
-    option (buf.validate.message).cel = {
       message: 'enums only supported for type number or string'
       id: 'enums_type_invalid'
       expression: 'has(this.enum) ? this.type in [skiff.registry.v1alpha1.Field.Type.string, skiff.registry.v1alpha1.Field.Type.number] : true'
@@ -92,11 +86,8 @@ message Field {
       }
     ];
 
-    // If the type is set to "array", this specifies the underlying type. Required if type is "array".
-    optional SubField items = 2;
-
     // Restrict your options to a set of values to choose.
-    optional google.protobuf.ListValue enum = 3;
+    optional google.protobuf.ListValue enum = 2;
   }
 
   // The name of the field. This must be unique between all fields.
@@ -135,9 +126,12 @@ message File {
   // The target path of the rendered template relative to the root of the project. Accepts template parameters.
   string target = 2 [(buf.validate.field).string.min_len = 1];
 
-  // The contents of the file. You do not need to populate this manually.
-  optional bytes content = 3;
+  // The raw contents of the file. You do not need to populate this manually. This field is set if the data is binary. It is mutually exclusive with the content field.
+  optional bytes raw = 3;
 
   // The type of the file.
   Type type = 4;
+
+  // The text contents of the file. This field will be populated if the file contains valid UTF-8 text. Otherwise, the contents are set in the raw field. You do not need to populate this manually.
+  optional string content = 5;
 }

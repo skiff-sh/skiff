@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/skiff-sh/skiff/pkg/fileutil"
 )
 
 type Filesystem interface {
@@ -18,22 +20,28 @@ type Filesystem interface {
 
 	// AsRel returns the enforced relative path to the root. If name is absolute and not within the path, an error is returned.
 	AsRel(name string) (string, error)
+
+	Exists(name string) bool
 }
 
 type WriterTo interface {
 	WriteTo(fsys Filesystem) error
 }
 
-func NewFilesystem(fp string, f fs.FS) Filesystem {
+func New(fp string) Filesystem {
 	return &fsys{
 		RootP:  fp,
-		RootFS: f,
+		RootFS: os.DirFS(fp),
 	}
 }
 
 type fsys struct {
 	RootP  string
 	RootFS fs.FS
+}
+
+func (f *fsys) Exists(name string) bool {
+	return fileutil.ExistsFS(f.RootFS, name)
 }
 
 func (f *fsys) Open(name string) (fs.File, error) {

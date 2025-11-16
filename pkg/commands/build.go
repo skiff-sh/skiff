@@ -7,16 +7,29 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/skiff-sh/config/ptr"
 	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/fileutil"
 	"github.com/skiff-sh/skiff/pkg/interact"
 	"github.com/skiff-sh/skiff/pkg/protoencode"
 	"github.com/skiff-sh/skiff/pkg/registry"
-	"google.golang.org/protobuf/encoding/protojson"
+	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/proto"
 )
 
-func NewBuildCommand() *BuildCommandAction {
+var BuildFlagOutputDirectory = &cli.StringFlag{
+	Name:    "output",
+	Usage:   "Destination directory for registry json files.",
+	Value:   "./public/r",
+	Aliases: []string{"o", "out"},
+}
+
+var BuildArgRegistryPath = &cli.StringArg{
+	Name:      "registry",
+	UsageText: "registry file path",
+}
+
+func NewBuildAction() *BuildCommandAction {
 	return &BuildCommandAction{}
 }
 
@@ -29,7 +42,7 @@ type BuildArgs struct {
 	RegistryPath string
 }
 
-func (b *BuildCommandAction) Build(_ context.Context, args *BuildArgs) error {
+func (b *BuildCommandAction) Act(_ context.Context, args *BuildArgs) error {
 	_ = os.MkdirAll(args.OutputDirectory, 0755)
 
 	if !fileutil.Exists(args.RegistryPath) {
@@ -52,13 +65,14 @@ func (b *BuildCommandAction) Build(_ context.Context, args *BuildArgs) error {
 	}
 
 	for _, v := range reg.Packages {
-		interact.Infof("Writing package %s", v.Name)
+		targetPath := filepath.Join(args.OutputDirectory, v.Name+".json")
+		interact.Infof("Writing file %s", targetPath)
 		pkg, err := HydratePackage(v, regFS)
 		if err != nil {
 			return fmt.Errorf("package %s: %w", v.Name, err)
 		}
 
-		err = WritePackage(pkg, args.OutputDirectory)
+		err = WritePackage(pkg, targetPath)
 		if err != nil {
 			return fmt.Errorf("package %s: %w", v.Name, err)
 		}
@@ -71,11 +85,13 @@ func (b *BuildCommandAction) Build(_ context.Context, args *BuildArgs) error {
 		}
 	}
 
-	raw, err := protojson.Marshal(reg)
+	raw, err := protoencode.PrettyMarshaller.Marshal(reg)
 	if err != nil {
 		return fmt.Errorf("registry invalid: %w", err)
 	}
-	err = os.WriteFile(filepath.Join(args.OutputDirectory, "registry.json"), raw, 0644)
+	targetPath := filepath.Join(args.OutputDirectory, "registry.json")
+	interact.Infof("Writing file %s", targetPath)
+	err = os.WriteFile(targetPath, raw, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write registry: %w", err)
 	}
@@ -84,15 +100,20 @@ func (b *BuildCommandAction) Build(_ context.Context, args *BuildArgs) error {
 }
 
 func HydratePackage(pkg *v1alpha1.Package, registryRoot fs.FS) (*v1alpha1.Package, error) {
-	var err error
 	out := proto.CloneOf(pkg)
 	for _, v := range out.Files {
-		if len(v.Content) > 0 {
+		if v.Content != nil && len(v.Raw) == 0 {
 			continue
 		}
-		v.Content, err = fs.ReadFile(registryRoot, v.Path)
+		content, err := fs.ReadFile(registryRoot, v.Path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read file %s: %w", v.Path, err)
+		}
+
+		if v.Type == v1alpha1.File_plugin {
+			v.Raw = content
+		} else {
+			v.Content = ptr.Ptr(string(content))
 		}
 	}
 	return out, nil
@@ -104,5 +125,5 @@ func WritePackage(pkg *v1alpha1.Package, targetPath string) error {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(targetPath, pkg.Name), b, 0644)
+	return os.WriteFile(targetPath, b, 0644)
 }

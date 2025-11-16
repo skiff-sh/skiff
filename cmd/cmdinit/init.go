@@ -6,10 +6,9 @@ import (
 	skiffconfig "github.com/skiff-sh/config"
 	"github.com/skiff-sh/skiff/cmd/config"
 	"github.com/skiff-sh/skiff/pkg/commands"
-	"github.com/urfave/cli/v3"
 )
 
-func NewCommand() (*cli.Command, error) {
+func NewCommand() (*commands.RootCommand, error) {
 	conf, err := config.NewConfig()
 	if err != nil {
 		return nil, err
@@ -22,10 +21,5 @@ func NewCommand() (*cli.Command, error) {
 
 	slog.SetDefault(logger)
 
-	cmd, err := commands.NewCommand(conf.Root).Command()
-	if err != nil {
-		return nil, err
-	}
-
-	return cmd, nil
+	return commands.NewCommand(conf.Root), nil
 }

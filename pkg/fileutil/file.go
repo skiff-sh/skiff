@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -32,12 +33,12 @@ func FindSibling(from, target string) (string, error) {
 
 func Exists(fp string) bool {
 	_, err := os.Stat(fp)
-	return errors.Is(err, fs.ErrNotExist)
+	return !errors.Is(err, fs.ErrNotExist)
 }
 
 func ExistsFS(f fs.FS, fp string) bool {
 	_, err := fs.Stat(f, fp)
-	return errors.Is(err, fs.ErrNotExist)
+	return !errors.Is(err, fs.ErrNotExist)
 }
 
 func IsRel(root, fp string) bool {
@@ -45,4 +46,53 @@ func IsRel(root, fp string) bool {
 		return strings.HasPrefix(fp, root)
 	}
 	return true
+}
+
+func CallerPath(skip int) string {
+	_, file, _, _ := runtime.Caller(skip)
+	return file
+}
+
+type File struct {
+	Data  []byte
+	IsDir bool
+}
+
+type MapFS map[string]File
+
+// FlatMapFS converts a fs.FS into a map of flat paths to their contents. Similar to [fstest.MapFS].
+func FlatMapFS(f fs.FS) MapFS {
+	out := MapFS{}
+
+	_ = fs.WalkDir(f, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+
+		b, err := fs.ReadFile(f, path)
+		if err != nil {
+			return nil
+		}
+
+		out[path] = File{
+			Data:  b,
+			IsDir: d.IsDir(),
+		}
+
+		return nil
+	})
+	return out
+}
+
+// SplitFilename splits a filename into base name and extension.
+// For example: "asd.txt" → ("asd", "txt")
+func SplitFilename(filename string) (base, ext string) {
+	ext = filepath.Ext(filename) // e.g. ".txt"
+	base = strings.TrimSuffix(filename, ext)
+
+	// Remove leading dot from extension, if present
+	if strings.HasPrefix(ext, ".") {
+		ext = ext[1:]
+	}
+	return base, ext
 }

@@ -1,17 +1,17 @@
 package e2e
 
 import (
-	"embed"
 	"io/fs"
 	"os"
 	"path/filepath"
 
 	"github.com/skiff-sh/skiff/cmd/cmdinit"
-	"github.com/urfave/cli/v3"
+	"github.com/skiff-sh/skiff/pkg/commands"
+	"github.com/skiff-sh/skiff/pkg/fileutil"
 )
 
 type CLI struct {
-	Command *cli.Command
+	Command *commands.RootCommand
 }
 
 func New() (*CLI, error) {
@@ -23,10 +23,11 @@ func New() (*CLI, error) {
 	return &CLI{Command: cmd}, nil
 }
 
-//go:embed all:examples/*
-var examples embed.FS
+func ExamplesPath() string {
+	return filepath.Join(filepath.Dir(filepath.Dir(fileutil.CallerPath(1))), "examples")
+}
 
-func CloneExample(dirName string) (string, error) {
+func CloneExample(examples fs.FS, dirName string) (string, error) {
 	tmp, err := os.MkdirTemp(os.TempDir(), "*")
 	if err != nil {
 		return "", err
@@ -42,7 +43,7 @@ func CloneExample(dirName string) (string, error) {
 		}
 
 		target := filepath.Join(tmp, path)
-		_ = os.MkdirAll(target, 0755)
+		_ = os.MkdirAll(filepath.Dir(target), 0755)
 
 		b, err := fs.ReadFile(examples, path)
 		if err != nil {
@@ -55,5 +56,5 @@ func CloneExample(dirName string) (string, error) {
 		return "", err
 	}
 
-	return tmp, nil
+	return filepath.Join(tmp, dirName), nil
 }

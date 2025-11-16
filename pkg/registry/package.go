@@ -5,6 +5,7 @@ import (
 
 	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/filesystem"
+	"github.com/skiff-sh/skiff/pkg/schema"
 	"github.com/skiff-sh/skiff/pkg/tmpl"
 )
 
@@ -12,6 +13,12 @@ func NewPackageGenerator(t tmpl.Factory, p *v1alpha1.Package) (*PackageGenerator
 	out := &PackageGenerator{
 		Proto: p,
 		Files: make([]*FileGenerator, 0, len(p.Files)),
+	}
+
+	var err error
+	out.Schema, err = schema.NewSchema(p.Schema)
+	if err != nil {
+		return nil, err
 	}
 
 	for _, v := range p.Files {
@@ -27,8 +34,9 @@ func NewPackageGenerator(t tmpl.Factory, p *v1alpha1.Package) (*PackageGenerator
 }
 
 type PackageGenerator struct {
-	Proto *v1alpha1.Package
-	Files []*FileGenerator
+	Proto  *v1alpha1.Package
+	Files  []*FileGenerator
+	Schema *schema.Schema
 }
 
 func (p *PackageGenerator) Generate(d map[string]any) (*Package, error) {

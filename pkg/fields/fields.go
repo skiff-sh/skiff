@@ -34,3 +34,20 @@ type SubInt64 interface {
 func Atoi[I SubInt64](i I) string {
 	return strconv.FormatInt(int64(i), 10)
 }
+
+// Provider is a singleton wrapper that is only instantiated once. It's the same as sync.OnceValue but without the additional overhead
+// of supporting concurrent calls.
+type Provider[T any] func() T
+
+// NewProvider constructs a new Provider.
+func NewProvider[T any](t Provider[T]) Provider[T] {
+	called := false
+	var val T
+	return func() T {
+		if !called {
+			val = t()
+			called = true
+		}
+		return val
+	}
+}

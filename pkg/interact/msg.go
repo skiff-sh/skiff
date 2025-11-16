@@ -8,7 +8,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-var Writer io.Writer = os.Stdout
+var (
+	Output io.Writer = os.Stdout
+	Input  io.Reader = os.Stdin
+)
 
 var (
 	green  = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
@@ -18,35 +21,35 @@ var (
 )
 
 func Infof(s string, args ...any) {
-	_, _ = fmt.Fprintln(Writer, InfoStringf(s, args...))
+	_, _ = fmt.Fprintln(Output, InfoStringf(s, args...))
 }
 
 func Errorf(s string, args ...any) {
-	_, _ = fmt.Fprintln(Writer, ErrorStringf(s, args...))
+	_, _ = fmt.Fprintln(Output, ErrorStringf(s, args...))
 }
 
 func Warnf(s string, args ...any) {
-	_, _ = fmt.Fprintln(Writer, WarnStringf(s, args...))
+	_, _ = fmt.Fprintln(Output, WarnStringf(s, args...))
 }
 
 func Successf(s string, args ...any) {
-	_, _ = fmt.Fprintln(Writer, SuccessStringf(s, args...))
+	_, _ = fmt.Fprintln(Output, SuccessStringf(s, args...))
 }
 
 func Error(s string) {
-	_, _ = fmt.Fprintln(Writer, ErrorString(s))
+	_, _ = fmt.Fprintln(Output, ErrorString(s))
 }
 
 func Info(s string) {
-	_, _ = fmt.Fprintln(Writer, InfoString(s))
+	_, _ = fmt.Fprintln(Output, InfoString(s))
 }
 
 func Warn(s string) {
-	_, _ = fmt.Fprintln(Writer, WarnString(s))
+	_, _ = fmt.Fprintln(Output, WarnString(s))
 }
 
 func Success(s string) {
-	_, _ = fmt.Fprintln(Writer, InfoString(s))
+	_, _ = fmt.Fprintln(Output, InfoString(s))
 }
 
 func InfoStringf(s string, args ...any) string {

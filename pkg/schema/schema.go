@@ -1,31 +1,13 @@
 package schema
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"slices"
-	"strings"
 
 	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
-	"github.com/skiff-sh/skiff/pkg/collection"
 	"github.com/skiff-sh/skiff/pkg/fields"
-	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 )
-
-type Schema struct {
-	Proto  *v1alpha1.Schema
-	Fields []*Field
-}
-
-type Field struct {
-	Proto *v1alpha1.Field
-	// Set if the default field is present.
-	Default any
-	// Set if the enum field is present.
-	Enum []any
-}
 
 func NewSchema(sch *v1alpha1.Schema) (*Schema, error) {
 	out := &Schema{
@@ -78,6 +60,19 @@ func NewField(p *v1alpha1.Field) (*Field, error) {
 	}
 
 	return out, nil
+}
+
+type Schema struct {
+	Proto  *v1alpha1.Schema
+	Fields []*Field
+}
+
+type Field struct {
+	Proto *v1alpha1.Field
+	// Set if the default field is present.
+	Default any
+	// Set if the enum field is present.
+	Enum []any
 }
 
 func getDefault(p *v1alpha1.Field) (any, error) {
@@ -133,108 +128,4 @@ func primitiveAs(val *structpb.Value, typ v1alpha1.Field_Type) (any, error) {
 		return v, nil
 	}
 	return nil, errors.New("expected string, number, or bool")
-}
-
-func FieldToCLIFlag(packageName string, f *Field) cli.Flag {
-	switch f.Proto.GetType() {
-	case v1alpha1.Field_string:
-		enumVals := collection.Map(f.Enum, fields.Cast[string])
-		out := &cli.StringFlag{
-			Name:     f.Proto.Name,
-			Category: packageName,
-			Usage:    f.Proto.GetDescription(),
-			Required: f.Proto.Default == nil,
-			Value:    fields.Cast[string](f.Default),
-		}
-
-		if len(enumVals) > 0 {
-			out.Action = func(ctx context.Context, command *cli.Command, val string) error {
-				idx := slices.Index(enumVals, val)
-				if idx < 0 {
-					return fmt.Errorf("%s cannot be '%s': expected one of %s", f.Proto.Name, val, strings.Join(enumVals, ", "))
-				}
-				return nil
-			}
-		}
-
-		return out
-	case v1alpha1.Field_number:
-		enumVals := collection.Map(f.Enum, fields.Cast[float64])
-		out := &cli.Float64Flag{
-			Name:     f.Proto.Name,
-			Category: packageName,
-			Usage:    f.Proto.GetDescription(),
-			Required: f.Proto.Default == nil,
-			Value:    fields.Cast[float64](f.Default),
-		}
-
-		if len(enumVals) > 0 {
-			out.Action = func(ctx context.Context, command *cli.Command, val float64) error {
-				idx := slices.Index(enumVals, val)
-				if idx < 0 {
-					return fmt.Errorf("%s cannot be '%v': expected one of %s", f.Proto.Name, val, strings.Join(collection.Map(enumVals, fields.FormatFloat), ", "))
-				}
-				return nil
-			}
-		}
-
-		return out
-	case v1alpha1.Field_bool:
-		return &cli.BoolFlag{
-			Name:     f.Proto.Name,
-			Category: packageName,
-			Usage:    f.Proto.GetDescription(),
-			Required: f.Proto.Default == nil,
-			Value:    fields.Cast[bool](f.Default),
-		}
-	case v1alpha1.Field_array:
-		switch f.Proto.GetItems().GetType() {
-		case v1alpha1.Field_string:
-			enumVals := collection.Map(f.Enum, fields.Cast[string])
-			out := &cli.StringSliceFlag{
-				Name:     f.Proto.Name,
-				Category: packageName,
-				Usage:    f.Proto.GetDescription(),
-				Required: f.Proto.Default == nil,
-				Value:    fields.Cast[[]string](f.Proto.Default),
-			}
-
-			if len(enumVals) > 0 {
-				out.Action = func(ctx context.Context, command *cli.Command, val []string) error {
-					for _, v := range val {
-						idx := slices.Index(enumVals, v)
-						if idx < 0 {
-							return fmt.Errorf("%s cannot be %s: expected one of %s", f.Proto.Name, v, strings.Join(enumVals, ", "))
-						}
-					}
-					return nil
-				}
-			}
-			return out
-		case v1alpha1.Field_number:
-			enumVals := collection.Map(f.Enum, fields.Cast[float64])
-			out := &cli.Float64SliceFlag{
-				Name:     f.Proto.Name,
-				Category: packageName,
-				Usage:    f.Proto.GetDescription(),
-				Required: f.Proto.Default == nil,
-				Value:    fields.Cast[[]float64](f.Proto.Default),
-			}
-
-			if len(enumVals) > 0 {
-				out.Action = func(ctx context.Context, command *cli.Command, val []float64) error {
-					for _, v := range val {
-						idx := slices.Index(enumVals, v)
-						if idx < 0 {
-							return fmt.Errorf("%s cannot be %v: expected one of %s", f.Proto.Name, v, strings.Join(collection.Map(enumVals, fields.FormatFloat), ", "))
-						}
-					}
-					return nil
-				}
-			}
-
-			return out
-		}
-	}
-	return nil
 }

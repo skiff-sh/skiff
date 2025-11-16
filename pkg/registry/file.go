@@ -3,11 +3,11 @@ package registry
 import (
 	"fmt"
 
+	"github.com/skiff-sh/config/ptr"
 	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/bufferpool"
 	"github.com/skiff-sh/skiff/pkg/filesystem"
 	"github.com/skiff-sh/skiff/pkg/tmpl"
-	"google.golang.org/protobuf/proto"
 )
 
 type FileGenerator struct {
@@ -18,7 +18,11 @@ type FileGenerator struct {
 }
 
 func (f *FileGenerator) Generate(d map[string]any) (*File, error) {
-	out := proto.CloneOf(f.Proto)
+	out := &v1alpha1.File{
+		Path: f.Proto.Path,
+		Raw:  f.Proto.Raw,
+		Type: f.Proto.Type,
+	}
 
 	buf := bufferpool.GetBytesBuffer()
 	defer bufferpool.PutBytesBuffer(buf)
@@ -29,13 +33,14 @@ func (f *FileGenerator) Generate(d map[string]any) (*File, error) {
 	out.Target = buf.String()
 	buf.Reset()
 
-	err = f.Content.Render(d, buf)
-	if err != nil {
-		return nil, fmt.Errorf("failed to render 'contents' template: %w", err)
+	if f.Content != nil {
+		err = f.Content.Render(d, buf)
+		if err != nil {
+			return nil, fmt.Errorf("failed to render 'contents' template: %w", err)
+		}
+		out.Content = ptr.Ptr(buf.String())
 	}
 
-	out.Content = make([]byte, buf.Len())
-	copy(out.Content, buf.Bytes())
 	return &File{Proto: out}, nil
 }
 
@@ -50,9 +55,13 @@ func NewFileGenerator(t tmpl.Factory, p *v1alpha1.File) (*FileGenerator, error) 
 		return nil, fmt.Errorf("invalid 'target' template expression: %w", err)
 	}
 
-	out.Content, err = t.NewTemplate(p.Content)
-	if err != nil {
-		return nil, fmt.Errorf("invalid 'content' template expression: %w", err)
+	if p.Content != nil {
+		content, err := t.NewTemplate([]byte(*p.Content))
+		if err != nil {
+			return nil, fmt.Errorf("invalid 'content' template expression: %w", err)
+		}
+
+		out.Content = content
 	}
 
 	return out, nil
@@ -63,5 +72,9 @@ type File struct {
 }
 
 func (f *File) WriteTo(fsys filesystem.Filesystem) error {
-	return fsys.WriteFile(f.Proto.Target, f.Proto.Content)
+	if f.Proto.Content != nil {
+		return fsys.WriteFile(f.Proto.Target, []byte(f.Proto.GetContent()))
+	} else {
+		return fsys.WriteFile(f.Proto.Target, f.Proto.Raw)
+	}
 }
