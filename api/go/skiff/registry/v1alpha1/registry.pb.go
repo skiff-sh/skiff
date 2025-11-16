@@ -399,14 +399,16 @@ func (x *Field) GetEnum() *structpb.ListValue {
 
 type File struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The path to the template relative to the root of the registry.
+	// The path to the template relative to the root of the registry. The root of the registry is the directory housing your 'registry.json' file. Cannot be outside of the registry root.
 	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
 	// The target path of the rendered template relative to the root of the project. Accepts template parameters.
 	Target string `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
-	// The contents of the file. You do not need to populate this manually.
-	Content []byte `protobuf:"bytes,3,opt,name=content,proto3,oneof" json:"content,omitempty"`
+	// The raw contents of the file. You do not need to populate this manually. This field is set if the data is binary. It is mutually exclusive with the content field.
+	Raw []byte `protobuf:"bytes,3,opt,name=raw,proto3,oneof" json:"raw,omitempty"`
 	// The type of the file.
-	Type          File_Type `protobuf:"varint,4,opt,name=type,proto3,enum=skiff.registry.v1alpha1.File_Type" json:"type,omitempty"`
+	Type File_Type `protobuf:"varint,4,opt,name=type,proto3,enum=skiff.registry.v1alpha1.File_Type" json:"type,omitempty"`
+	// The text contents of the file. This field will be populated if the file contains valid UTF-8 text. Otherwise, the contents are set in the raw field. You do not need to populate this manually.
+	Content       *string `protobuf:"bytes,5,opt,name=content,proto3,oneof" json:"content,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -455,9 +457,9 @@ func (x *File) GetTarget() string {
 	return ""
 }
 
-func (x *File) GetContent() []byte {
+func (x *File) GetRaw() []byte {
 	if x != nil {
-		return x.Content
+		return x.Raw
 	}
 	return nil
 }
@@ -469,14 +471,19 @@ func (x *File) GetType() File_Type {
 	return File_plain
 }
 
+func (x *File) GetContent() string {
+	if x != nil && x.Content != nil {
+		return *x.Content
+	}
+	return ""
+}
+
 type Field_SubField struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Required. Can be a string or number.
 	Type *Field_Type `protobuf:"varint,1,opt,name=type,proto3,enum=skiff.registry.v1alpha1.Field_Type,oneof" json:"type,omitempty"`
-	// If the type is set to "array", this specifies the underlying type. Required if type is "array".
-	Items *Field_SubField `protobuf:"bytes,2,opt,name=items,proto3,oneof" json:"items,omitempty"`
 	// Restrict your options to a set of values to choose.
-	Enum          *structpb.ListValue `protobuf:"bytes,3,opt,name=enum,proto3,oneof" json:"enum,omitempty"`
+	Enum          *structpb.ListValue `protobuf:"bytes,2,opt,name=enum,proto3,oneof" json:"enum,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -518,13 +525,6 @@ func (x *Field_SubField) GetType() Field_Type {
 	return Field_string
 }
 
-func (x *Field_SubField) GetItems() *Field_SubField {
-	if x != nil {
-		return x.Items
-	}
-	return nil
-}
-
 func (x *Field_SubField) GetEnum() *structpb.ListValue {
 	if x != nil {
 		return x.Enum
@@ -549,23 +549,21 @@ const file_skiff_registry_v1alpha1_registry_proto_rawDesc = "" +
 	"\a_schema\"\xa0\x01\n" +
 	"\x06Schema\x126\n" +
 	"\x06fields\x18\x01 \x03(\v2\x1e.skiff.registry.v1alpha1.FieldR\x06fields:^\xbaH[\x1aY\n" +
-	"\x12unique_field_names\x12\x1eall field names must be unique\x1a#this.fields.map(v, v.name).unique()\"\x86\f\n" +
+	"\x12unique_field_names\x12\x1eall field names must be unique\x1a#this.fields.map(v, v.name).unique()\"\xa1\n" +
+	"\n" +
 	"\x05Field\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12D\n" +
 	"\x04type\x18\x02 \x01(\x0e2#.skiff.registry.v1alpha1.Field.TypeB\x06\xbaH\x03\xc8\x01\x01H\x00R\x04type\x88\x01\x01\x12B\n" +
 	"\x05items\x18\x03 \x01(\v2'.skiff.registry.v1alpha1.Field.SubFieldH\x01R\x05items\x88\x01\x01\x12%\n" +
 	"\vdescription\x18\x04 \x01(\tH\x02R\vdescription\x88\x01\x01\x125\n" +
 	"\adefault\x18\x05 \x01(\v2\x16.google.protobuf.ValueH\x03R\adefault\x88\x01\x01\x123\n" +
-	"\x04enum\x18\x06 \x01(\v2\x1a.google.protobuf.ListValueH\x04R\x04enum\x88\x01\x01\x1a\xce\x04\n" +
+	"\x04enum\x18\x06 \x01(\v2\x1a.google.protobuf.ListValueH\x04R\x04enum\x88\x01\x01\x1a\xe9\x02\n" +
 	"\bSubField\x12K\n" +
 	"\x04type\x18\x01 \x01(\x0e2#.skiff.registry.v1alpha1.Field.TypeB\r\xbaH\n" +
-	"\xc8\x01\x01\x82\x01\x04\x18\x00\x18\x02H\x00R\x04type\x88\x01\x01\x12B\n" +
-	"\x05items\x18\x02 \x01(\v2'.skiff.registry.v1alpha1.Field.SubFieldH\x01R\x05items\x88\x01\x01\x123\n" +
-	"\x04enum\x18\x03 \x01(\v2\x1a.google.protobuf.ListValueH\x02R\x04enum\x88\x01\x01:\xdf\x02\xbaH\xdb\x02\x1a\x94\x01\n" +
-	"\x0eitems_required\x12\x19items required for arrays\x1agthis.type == skiff.registry.v1alpha1.Field.Type.array ? (has(this.items) && has(this.items.type)): true\x1a\xc1\x01\n" +
+	"\xc8\x01\x01\x82\x01\x04\x18\x00\x18\x02H\x00R\x04type\x88\x01\x01\x123\n" +
+	"\x04enum\x18\x02 \x01(\v2\x1a.google.protobuf.ListValueH\x01R\x04enum\x88\x01\x01:\xc8\x01\xbaH\xc4\x01\x1a\xc1\x01\n" +
 	"\x12enums_type_invalid\x12.enums only supported for type number or string\x1a{has(this.enum) ? this.type in [skiff.registry.v1alpha1.Field.Type.string, skiff.registry.v1alpha1.Field.Type.number] : trueB\a\n" +
-	"\x05_typeB\b\n" +
-	"\x06_itemsB\a\n" +
+	"\x05_typeB\a\n" +
 	"\x05_enum\"3\n" +
 	"\x04Type\x12\n" +
 	"\n" +
@@ -582,17 +580,19 @@ const file_skiff_registry_v1alpha1_registry_proto_rawDesc = "" +
 	"\f_descriptionB\n" +
 	"\n" +
 	"\b_defaultB\a\n" +
-	"\x05_enum\"\xd4\x01\n" +
+	"\x05_enum\"\xf3\x01\n" +
 	"\x04File\x12\x1b\n" +
 	"\x04path\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04path\x12\x1f\n" +
-	"\x06target\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06target\x12\x1d\n" +
-	"\acontent\x18\x03 \x01(\fH\x00R\acontent\x88\x01\x01\x126\n" +
-	"\x04type\x18\x04 \x01(\x0e2\".skiff.registry.v1alpha1.File.TypeR\x04type\"+\n" +
+	"\x06target\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06target\x12\x15\n" +
+	"\x03raw\x18\x03 \x01(\fH\x00R\x03raw\x88\x01\x01\x126\n" +
+	"\x04type\x18\x04 \x01(\x0e2\".skiff.registry.v1alpha1.File.TypeR\x04type\x12\x1d\n" +
+	"\acontent\x18\x05 \x01(\tH\x01R\acontent\x88\x01\x01\"+\n" +
 	"\x04Type\x12\t\n" +
 	"\x05plain\x10\x00\x12\f\n" +
 	"\btemplate\x10\x01\x12\n" +
 	"\n" +
-	"\x06plugin\x10\x02B\n" +
+	"\x06plugin\x10\x02B\x06\n" +
+	"\x04_rawB\n" +
 	"\n" +
 	"\b_contentB\xe4\x01\n" +
 	"\x1bcom.skiff.registry.v1alpha1B\rRegistryProtoP\x01Z8github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1\xa2\x02\x03SRX\xaa\x02\x17Skiff.Registry.V1alpha1\xca\x02\x17Skiff\\Registry\\V1alpha1\xe2\x02#Skiff\\Registry\\V1alpha1\\GPBMetadata\xea\x02\x19Skiff::Registry::V1alpha1b\x06proto3"
@@ -634,13 +634,12 @@ var file_skiff_registry_v1alpha1_registry_proto_depIdxs = []int32{
 	9,  // 7: skiff.registry.v1alpha1.Field.enum:type_name -> google.protobuf.ListValue
 	1,  // 8: skiff.registry.v1alpha1.File.type:type_name -> skiff.registry.v1alpha1.File.Type
 	0,  // 9: skiff.registry.v1alpha1.Field.SubField.type:type_name -> skiff.registry.v1alpha1.Field.Type
-	7,  // 10: skiff.registry.v1alpha1.Field.SubField.items:type_name -> skiff.registry.v1alpha1.Field.SubField
-	9,  // 11: skiff.registry.v1alpha1.Field.SubField.enum:type_name -> google.protobuf.ListValue
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	9,  // 10: skiff.registry.v1alpha1.Field.SubField.enum:type_name -> google.protobuf.ListValue
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_skiff_registry_v1alpha1_registry_proto_init() }

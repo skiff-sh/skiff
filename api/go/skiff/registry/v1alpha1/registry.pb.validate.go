@@ -707,6 +707,10 @@ func (m *File) validate(all bool) error {
 
 	// no validation rules for Type
 
+	if m.Raw != nil {
+		// no validation rules for Raw
+	}
+
 	if m.Content != nil {
 		// no validation rules for Content
 	}
@@ -812,39 +816,6 @@ func (m *Field_SubField) validate(all bool) error {
 
 	if m.Type != nil {
 		// no validation rules for Type
-	}
-
-	if m.Items != nil {
-
-		if all {
-			switch v := interface{}(m.GetItems()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, Field_SubFieldValidationError{
-						field:  "Items",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, Field_SubFieldValidationError{
-						field:  "Items",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetItems()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return Field_SubFieldValidationError{
-					field:  "Items",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
 	}
 
 	if m.Enum != nil {

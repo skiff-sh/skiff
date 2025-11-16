@@ -33,7 +33,7 @@ proto:
 gen: mocks proto
 
 croc.send:
-	 CROC_SECRET=skiff123 croc send --git --exclude  "api,.git,.idea" ./*
+	 CROC_SECRET=skiff123 croc send --git --exclude  "api,.git,.idea,mocks" ./*
 
 croc.receive:
 	croc --yes --overwrite skiff123

@@ -17,10 +17,6 @@
           "$ref": "#/$defs/google.protobuf.ListValue.jsonschema.strict.json",
           "description": "Restrict your options to a set of values to choose."
         },
-        "items": {
-          "$ref": "#/$defs/skiff.registry.v1alpha1.Field.SubField.jsonschema.strict.json",
-          "description": "If the type is set to \"array\", this specifies the underlying type. Required if type is \"array\"."
-        },
         "type": {
           "description": "Required. Can be a string or number.",
           "enum": [

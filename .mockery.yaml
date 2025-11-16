@@ -5,3 +5,6 @@ dir: "pkg/mocks/{{ base .SrcPackageName }}mocks"
 pkgname: "{{ base .SrcPackageName }}mocks"
 structname: "{{.InterfaceName}}"
 template: testify
+packages:
+  github.com/skiff-sh/skiff/pkg/filesystem: { }
+
