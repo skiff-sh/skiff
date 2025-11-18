@@ -3,12 +3,12 @@ package commands
 import (
 	"context"
 	"errors"
+	"flag"
 	"io"
 	"os"
 	"slices"
 	"strings"
 
-	"github.com/skiff-sh/skiff/pkg/collection"
 	"github.com/skiff-sh/skiff/pkg/filesystem"
 	"github.com/urfave/cli/v3"
 )
@@ -142,22 +142,23 @@ func (r *RootCommand) Run(ctx context.Context, args []string) error {
 }
 
 func newAddCmd(ctx context.Context, args []string) (*cli.Command, error) {
-	cmdArgs := filterFlagsFromArgs(args)
-	isAddCmd := false
-	if len(cmdArgs) > 2 {
-		isAddCmd = cmdArgs[1] == "add"
-	}
-
 	addCmd := &cli.Command{
 		Name:  "add",
 		Usage: "Add code to your project.",
 		Flags: []cli.Flag{
 			AddFlagNonInteractive,
 			AddFlagCreateAll,
+			AddFlagRoot,
 		},
 		Arguments: []cli.Argument{
 			AddArgPackages,
 		},
+	}
+
+	cmdArgs := filterFlagsFromArgs(args, addCmd.Flags)
+	isAddCmd := false
+	if len(cmdArgs) > 2 {
+		isAddCmd = cmdArgs[1] == "add"
 	}
 
 	if isAddCmd {
@@ -168,7 +169,7 @@ func newAddCmd(ctx context.Context, args []string) (*cli.Command, error) {
 				return nil, err
 			}
 
-			flags, err := FlagsFromPackages(argsHaveFlag(cmdArgs, AddFlagNonInteractive), pkgs)
+			flags, err := FlagsFromPackages(argsHaveBoolFlag(cmdArgs, AddFlagNonInteractive), pkgs)
 			if err != nil {
 				return nil, err
 			}
@@ -202,13 +203,42 @@ func newAddCmd(ctx context.Context, args []string) (*cli.Command, error) {
 	return addCmd, nil
 }
 
-func filterFlagsFromArgs(s []string) []string {
-	return collection.Filter(s, func(e string) bool {
-		return !strings.HasPrefix(e, "-")
-	})
+func filterFlagsFromArgs(s []string, possibleFlags []cli.Flag) []string {
+	skipNext := false
+	out := make([]string, 0, len(s))
+	for _, v := range s {
+		if skipNext {
+			skipNext = false
+			continue
+		}
+
+		if strings.HasPrefix(v, "-") {
+			flagName := strings.Trim(v, "-")
+			idx := slices.IndexFunc(possibleFlags, func(c cli.Flag) bool {
+				return slices.Contains(c.Names(), flagName)
+			})
+			if idx >= 0 {
+				_, isBool := possibleFlags[idx].(*cli.BoolFlag)
+				if !isBool {
+					skipNext = true
+				}
+			}
+			continue
+		}
+
+		out = append(out, v)
+	}
+
+	return out
 }
 
-func argsHaveFlag(args []string, fl cli.Flag) bool {
+func parseFlags(args []string) *flag.FlagSet {
+	set := flag.NewFlagSet("skiff", flag.ContinueOnError)
+	_ = set.Parse(args)
+	return set
+}
+
+func argsHaveBoolFlag(args []string, fl cli.Flag) bool {
 	names := fl.Names()
 	return slices.ContainsFunc(args, func(s string) bool {
 		return slices.Contains(names, s)

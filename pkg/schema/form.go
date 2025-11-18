@@ -192,16 +192,16 @@ func NewFormField(f *Field) *FormField {
 
 		switch typ {
 		case v1alpha1.Field_string:
-			sel, getter := newSelect[string](f)
+			sel, accessor := newSelect[string](f)
 			if sel != nil {
 				out.FormFields = append(out.FormFields, sel)
-				out.Accessor = getter
+				out.Accessor = accessor
 			}
 		case v1alpha1.Field_number:
-			sel, getter := newSelect[float64](f)
+			sel, accessor := newSelect[float64](f)
 			if sel != nil {
 				out.FormFields = append(out.FormFields, sel)
-				out.Accessor = getter
+				out.Accessor = accessor
 			}
 		}
 

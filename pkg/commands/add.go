@@ -21,27 +21,25 @@ var AddArgPackages = &cli.StringArgs{
 	Name:      "packages",
 	UsageText: "URL or local path to package JSON file",
 	Min:       1,
+	Max:       -1,
 }
 
 var AddFlagNonInteractive = &cli.BoolFlag{
-	Name:     "non-interactive",
-	Category: "skiff",
-	Usage:    "Disable all form prompts. All package schema's will be required via flags.",
-	Aliases:  []string{"noi", "non-i"},
+	Name:    "non-interactive",
+	Usage:   "Disable all form prompts. All package schema's will be required via flags.",
+	Aliases: []string{"noi", "non-i"},
 }
 
 var AddFlagCreateAll = &cli.BoolFlag{
-	Name:     "create",
-	Category: "skiff",
-	Usage:    "Auto-confirm all prompts to create files but prompt to run plugins.",
-	Aliases:  []string{"y"},
+	Name:    "create",
+	Usage:   "Auto-confirm all prompts to create files but prompt to run plugins.",
+	Aliases: []string{"y"},
 }
 
 var AddFlagRoot = &cli.StringFlag{
-	Name:     "root",
-	Category: "skiff",
-	Usage:    "The root of your project. All files are written relative to the root. Defaults to the cwd.",
-	Aliases:  []string{"r"},
+	Name:    "root",
+	Usage:   "The root of your project. All files are written relative to the root. Defaults to the cwd.",
+	Aliases: []string{"r"},
 }
 
 // NewAddAction constructor for AddAction. Packages should be retrieved prior to the construction

@@ -9,6 +9,7 @@ import (
 	"slices"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/collection"
 	"github.com/skiff-sh/skiff/pkg/fileutil"
@@ -164,6 +165,7 @@ func (c *CliTestSuite) TestAdd() {
 	type test struct {
 		Args        func(buildOutputDir string) []string
 		ExampleName string
+		Inputs      string
 		Expected    func(p *output)
 		ExpectedErr string
 	}
@@ -173,6 +175,15 @@ func (c *CliTestSuite) TestAdd() {
 			ExampleName: "go-fiber-controller",
 			Args: func(buildOutputDir string) []string {
 				return []string{filepath.Join(buildOutputDir, "create-http-route.json")}
+			},
+		},
+		"go-fiber-controller example": {
+			ExampleName: "go-fiber-controller",
+			Args: func(buildOutputDir string) []string {
+				return []string{filepath.Join(buildOutputDir, "create-http-route.json")}
+			},
+			Expected: func(p *output) {
+
 			},
 		},
 	}
@@ -199,8 +210,14 @@ func (c *CliTestSuite) TestAdd() {
 				return
 			}
 
-			buf := bytes.NewBuffer(nil)
-			cmd.Command.CLI.Writer = buf
+			output := bytes.NewBuffer(nil)
+			input := bytes.NewBuffer(nil)
+
+			tea.KeyDown.String()
+
+			input.WriteString(v.Inputs)
+			cmd.Command.CLI.Reader = input
+			cmd.Command.CLI.Writer = output
 
 			err = cmd.Command.Run(ctx, append([]string{"skiff", "add"}, v.Args(build.OutputDir)...))
 			if !c.NoError(err) {
