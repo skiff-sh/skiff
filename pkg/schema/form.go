@@ -34,6 +34,7 @@ type HuhValueAccessor interface {
 	SetKey(s string)
 	SetDescription(s string)
 	SetTitle(s string)
+	Description() string
 	Value() Value
 }
 
@@ -51,8 +52,14 @@ func newSelectHuhAccessor[T comparable](sel *huh.Select[T], f *Field) HuhValueAc
 		},
 		ValueSource: ValueSourceFunc(func() Value {
 			if f.Proto.GetType() == v1alpha1.Field_number {
-				fl, _ := strconv.ParseFloat(sel.GetValue().(string), 64)
-				return NewValidatedVal(fl, f.Proto.GetType(), nil)
+				val := sel.GetValue()
+				switch typ := val.(type) {
+				case float64:
+					return NewValidatedVal(typ, f.Proto.GetType(), nil)
+				case string:
+					fl, _ := strconv.ParseFloat(sel.GetValue().(string), 64)
+					return NewValidatedVal(fl, f.Proto.GetType(), nil)
+				}
 			}
 			return NewValidatedVal(sel.GetValue(), f.Proto.GetType(), nil)
 		}),
@@ -74,8 +81,12 @@ func newInputHuhAccessor(in *huh.Input, typ v1alpha1.Field_Type) HuhValueAccesso
 		ValueSource: ValueSourceFunc(func() Value {
 			val := in.GetValue()
 			if typ == v1alpha1.Field_number {
-				fl, _ := strconv.ParseFloat(in.GetValue().(string), 64)
-				val = fl
+				fl, err := strconv.ParseFloat(in.GetValue().(string), 64)
+				if err != nil {
+					val = nil
+				} else {
+					val = fl
+				}
 			}
 			return NewValidatedVal(val, typ, nil)
 		}),
@@ -132,25 +143,33 @@ func newTextHuhAccessor(txt *huh.Text, itemsTyp v1alpha1.Field_Type) HuhValueAcc
 			txt.Title(title)
 		},
 		ValueSource: ValueSourceFunc(func() Value {
-			valParser := stringParser
+			var val any
+			lines := strings.Split(txt.GetValue().(string), "\n")
 			if itemsTyp == v1alpha1.Field_number {
-				valParser = floatParser
+				val, _ = collection.MapOrErr(lines, fields.ParseFloat[float64])
+			} else {
+				val = lines
 			}
-			li, _ := parseStringList(txt.GetValue().(string), valParser)
-			return NewValidatedVal(li, v1alpha1.Field_array, &itemsTyp)
+			return NewValidatedVal(val, v1alpha1.Field_array, &itemsTyp)
 		}),
 	}
 }
 
 type huhValueAccessor struct {
 	Field             huh.Field
+	DescriptionSetter func(s string)
+	Descript          string
 	KeySetter         func(key string)
-	DescriptionSetter func(desc string)
 	TitleSetter       func(title string)
 	ValueSource       ValueSource
 }
 
+func (h *huhValueAccessor) Description() string {
+	return h.Descript
+}
+
 func (h *huhValueAccessor) SetDescription(s string) {
+	h.Descript = s
 	h.DescriptionSetter(s)
 }
 
@@ -225,15 +244,16 @@ func NewFormField(f *Field) *FormField {
 		txt := huh.NewText().
 			Lines(5).
 			ShowLineNumbers(true).
-			Description("One entry per line").
 			Value(&val).
 			Validate(func(s string) error {
 				_, err := parseStringList(s, valParser)
 				return err
 			})
 
-		out.FormFields = append(out.FormFields, txt)
 		out.Accessor = newTextHuhAccessor(txt, f.Proto.GetItems().GetType())
+		out.FormFields = append(out.FormFields, txt)
+
+		out.Accessor.SetDescription("One line per entry.")
 	}
 
 	return out
@@ -245,7 +265,7 @@ var (
 	floatParser valueParser = func(s string) (any, error) {
 		fl, err := strconv.ParseFloat(s, 64)
 		if err != nil {
-			return nil, err
+			return nil, errors.New("not a number")
 		}
 		return fl, nil
 	}

@@ -8,6 +8,10 @@ import (
 	"github.com/charmbracelet/x/term"
 )
 
+var FormRunner = func(ctx context.Context, f *huh.Form) error {
+	return f.RunWithContext(ctx)
+}
+
 func NewHuhForm(groups ...*huh.Group) *huh.Form {
 	return huh.NewForm(groups...).WithOutput(Output).WithInput(Input).WithAccessible(!IsTerminal())
 }

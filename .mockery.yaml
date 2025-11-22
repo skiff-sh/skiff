@@ -6,5 +6,8 @@ pkgname: "{{ base .SrcPackageName }}mocks"
 structname: "{{.InterfaceName}}"
 template: testify
 packages:
-  github.com/skiff-sh/skiff/pkg/filesystem: { }
+  github.com/skiff-sh/skiff/pkg/registry:
+    config:
+      all: false
+      include-interface-regex: "HTTPClient"
 

@@ -44,7 +44,11 @@ func NewFileLoader(tmplFact tmpl.Factory) *FileLoader {
 	}
 }
 
-func NewHTTPLoader(tmplFact tmpl.Factory, cl *http.Client) *HTTPLoader {
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+func NewHTTPLoader(tmplFact tmpl.Factory, cl HTTPClient) *HTTPLoader {
 	return &HTTPLoader{
 		Client:          cl,
 		TemplateFactory: tmplFact,
@@ -87,7 +91,7 @@ func (f *FileLoader) LoadPackage(_ context.Context, path string) (*PackageGenera
 var _ Loader = (*HTTPLoader)(nil)
 
 type HTTPLoader struct {
-	Client          *http.Client
+	Client          HTTPClient
 	TemplateFactory tmpl.Factory
 }
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/huh"
@@ -127,6 +128,7 @@ func (a *AddAction) Act(ctx context.Context, args *AddArgs) error {
 	}
 
 	groups := make([]*huh.Group, 0, len(missingPackageFlags))
+	pkgFormFields := make(map[string][]*schema.FormField, len(missingPackageFlags))
 	for packageName, flags := range missingPackageFlags {
 		formFields := make([]*schema.FormField, 0, len(flags))
 		for _, fl := range flags {
@@ -135,7 +137,7 @@ func (a *AddAction) Act(ctx context.Context, args *AddArgs) error {
 				return errors.New("failed to create field")
 			}
 
-			ff.Accessor.SetDescription(fl.Field.Proto.GetDescription())
+			ff.Accessor.SetDescription(strings.Join([]string{fl.Field.Proto.GetDescription(), ff.Accessor.Description()}, ". "))
 			ff.Accessor.SetTitle(fl.Field.Proto.Name)
 			formFields = append(formFields, ff)
 		}
@@ -144,20 +146,22 @@ func (a *AddAction) Act(ctx context.Context, args *AddArgs) error {
 			return p.Proto.Name == packageName
 		})]
 
+		pkgFormFields[packageName] = formFields
+
 		group := interact.NewHuhGroup(schema.FlattenHuhFields(formFields)...)
 		group.Title(fmt.Sprintf("Package %s", pkg.Proto.Name)).Description(pkg.Proto.Description)
 		groups = append(groups, group)
 	}
 
 	form := interact.NewHuhForm(groups...)
-	err := form.RunWithContext(ctx)
+	err := interact.FormRunner(ctx, form)
 	if err != nil {
 		return err
 	}
 
-	for pkgName, flags := range missingPackageFlags {
-		for i := range flags {
-			data.AddPackageEntry(pkgName, flags[i])
+	for pkgName, inputs := range pkgFormFields {
+		for i := range inputs {
+			data.AddPackageEntry(pkgName, inputs[i])
 		}
 	}
 

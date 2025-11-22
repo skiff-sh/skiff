@@ -1,24 +1,24 @@
 package controller
 
 import (
-	"net/http"
-
 	"github.com/gofiber/fiber/v2"
 )
 
-var _ Controller = (*{{capitalize .name}}Controller)(nil)
+{{ $name := capitalize .name -}}
+{{ $firstLetter := .name | first | lower -}}
+var _ Controller = (*{{$name}}Controller)(nil)
 
-type {{capitalize .name}}Controller struct {
+type {{$name}}Controller struct {
 }
 
-func (h *Hello) Method() string {
+func ({{$firstLetter}} *{{$name}}Controller) Method() string {
 	return "{{.method}}"
 }
 
-func (h *Hello) Path() string {
+func ({{$firstLetter}} *{{$name}}Controller) Path() string {
 	return "{{.path}}"
 }
 
-func (h *Hello) Handle(c *fiber.Ctx) error {
-  return c.SendString("hello from " + {{.name}})
+func ({{$firstLetter}} *{{$name}}Controller) Handle(ctx *fiber.Ctx) error {
+  return ctx.SendString("hello from {{.name}}")
 }

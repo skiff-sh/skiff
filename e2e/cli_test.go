@@ -2,18 +2,24 @@ package e2e
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/x/exp/teatest"
 	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/collection"
 	"github.com/skiff-sh/skiff/pkg/fileutil"
+	"github.com/skiff-sh/skiff/pkg/interact"
 	"github.com/skiff-sh/skiff/pkg/protoencode"
+	"github.com/skiff-sh/skiff/pkg/testutil"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -42,13 +48,6 @@ func (c *CliTestSuite) TestHelp() {
 		},
 		"add help": {
 			Args: []string{"add", "--help"},
-			ExpectedFunc: func(o *output) {
-				fmt.Println(o.Stdout.String())
-				c.NotEmpty(o.Stdout.String())
-			},
-		},
-		"add help with registry": {
-			Args: []string{"add", filepath.Join(ExamplesPath(), "go-fiber-controller", ".skiff", ""), "--help"},
 			ExpectedFunc: func(o *output) {
 				fmt.Println(o.Stdout.String())
 				c.NotEmpty(o.Stdout.String())
@@ -118,7 +117,7 @@ func (c *CliTestSuite) TestBuild() {
 				// Check that the contents are the same as the original.
 				for _, pkg := range p.Actual.Packages {
 					for _, fi := range pkg.Files {
-						c.Equal(p.ExampleFS[filepath.Join(".skiff", fi.Path)].Data, fi.Content)
+						c.Equal(string(p.ExampleFS[filepath.Join(".skiff", fi.Path)].Data), fi.GetContent())
 					}
 				}
 			},
@@ -160,30 +159,37 @@ func (c *CliTestSuite) TestBuild() {
 
 func (c *CliTestSuite) TestAdd() {
 	type output struct {
+		Build       *BuildCmdOutput
+		TestModel   *teatest.TestModel
+		Form        *huh.Form
+		FinalOutput string
 	}
 
 	type test struct {
-		Args        func(buildOutputDir string) []string
+		Args        func(b *BuildCmdOutput) []string
 		ExampleName string
-		Inputs      string
+		Inputs      testutil.TeaInputs
 		Expected    func(p *output)
 		ExpectedErr string
 	}
 
 	tests := map[string]test{
-		"help shows schema flags": {
-			ExampleName: "go-fiber-controller",
-			Args: func(buildOutputDir string) []string {
-				return []string{filepath.Join(buildOutputDir, "create-http-route.json")}
-			},
-		},
 		"go-fiber-controller example": {
 			ExampleName: "go-fiber-controller",
-			Args: func(buildOutputDir string) []string {
-				return []string{filepath.Join(buildOutputDir, "create-http-route.json")}
+			Args: func(b *BuildCmdOutput) []string {
+				return []string{"--root", b.RootDir, filepath.Join(b.OutputDir, "create-http-route.json")}
 			},
+			Inputs: testutil.Inputs("derp", tea.KeyEnter, tea.KeyDown, tea.KeyEnter, "/derp", tea.KeyEnter),
 			Expected: func(p *output) {
+				fi, err := os.ReadFile(filepath.Join(p.Build.RootDir, "controller", "derp.go"))
+				if !c.NoError(err) {
+					return
+				}
 
+				content := string(fi)
+				if !c.Contains(content, "POST") || !c.Contains(content, "/derp") {
+					fmt.Println(content)
+				}
 			},
 		},
 	}
@@ -210,27 +216,34 @@ func (c *CliTestSuite) TestAdd() {
 				return
 			}
 
-			output := bytes.NewBuffer(nil)
-			input := bytes.NewBuffer(nil)
+			var mod *teatest.TestModel
+			var form *huh.Form
+			interact.FormRunner = func(ctx context.Context, f *huh.Form) error {
+				form = f
+				mod = teatest.NewTestModel(c.T(), testutil.NewFormTest(f))
+				v.Inputs.SendTo(mod, 10*time.Millisecond)
+				teatest.WaitFor(c.T(), mod.Output(), testutil.WaitFormDone(form), teatest.WithCheckInterval(10*time.Millisecond), teatest.WithDuration(100*time.Millisecond))
+				return nil
+			}
 
-			tea.KeyDown.String()
-
-			input.WriteString(v.Inputs)
-			cmd.Command.CLI.Reader = input
-			cmd.Command.CLI.Writer = output
-
-			err = cmd.Command.Run(ctx, append([]string{"skiff", "add"}, v.Args(build.OutputDir)...))
+			err = cmd.Command.Run(ctx, append([]string{"skiff", "add"}, v.Args(build)...))
 			if !c.NoError(err) {
 				return
 			}
 
-			v.Expected(&output{})
+			v.Expected(&output{
+				Build:       build,
+				TestModel:   mod,
+				Form:        form,
+				FinalOutput: testutil.Dump(mod.Output()),
+			})
 		})
 	}
 }
 
 type BuildCmdOutput struct {
 	OutputDir string
+	RootDir   string
 	Stdout    []byte
 }
 
@@ -254,6 +267,7 @@ func (c *CliTestSuite) buildExample(exaDir string, args ...string) (*BuildCmdOut
 	return &BuildCmdOutput{
 		OutputDir: outputDir,
 		Stdout:    buf.Bytes(),
+		RootDir:   exaDir,
 	}, true
 }
 

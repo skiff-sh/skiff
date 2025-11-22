@@ -1,9 +1,6 @@
 package schema
 
 import (
-	"fmt"
-
-	"github.com/skiff-sh/config/ptr"
 	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/collection"
 	"github.com/skiff-sh/skiff/pkg/fields"
@@ -48,30 +45,6 @@ func NewValidatedVal(a any, typ v1alpha1.Field_Type, itemsTyp *v1alpha1.Field_Ty
 	}
 }
 
-func NewVal(a any) (Value, error) {
-	out := &value{
-		Val: a,
-	}
-	switch a.(type) {
-	case string:
-		out.Typ = v1alpha1.Field_string
-	case float64:
-		out.Typ = v1alpha1.Field_number
-	case bool:
-		out.Typ = v1alpha1.Field_bool
-	case []string:
-		out.Typ = v1alpha1.Field_array
-		out.ItemsType = ptr.Ptr(v1alpha1.Field_string)
-	case []float64:
-		out.Typ = v1alpha1.Field_array
-		out.ItemsType = ptr.Ptr(v1alpha1.Field_number)
-	default:
-		return nil, fmt.Errorf("%T is not a supported type", a)
-	}
-
-	return out, nil
-}
-
 type value struct {
 	Val       any
 	Typ       v1alpha1.Field_Type
@@ -79,34 +52,61 @@ type value struct {
 }
 
 func (v *value) Any() any {
+	if v == nil {
+		return nil
+	}
 	return v.Val
 }
 
 func (v *value) String() string {
-	return fields.Cast[string](v.Val)
+	if v == nil {
+		return ""
+	}
+	o, _ := v.Val.(string)
+	return o
 }
 
 func (v *value) Number() float64 {
-	return fields.Cast[float64](v.Val)
+	if v == nil {
+		return 0
+	}
+	o, _ := v.Val.(float64)
+	return o
 }
 
 func (v *value) Bool() bool {
-	return fields.Cast[bool](v.Val)
+	if v == nil {
+		return false
+	}
+	o, _ := v.Val.(bool)
+	return o
 }
 
 func (v *value) Strings() []string {
+	if v == nil {
+		return nil
+	}
 	return collection.Map(fields.Cast[[]any](v.Val), fields.Cast[string])
 }
 
 func (v *value) Numbers() []float64 {
+	if v == nil {
+		return nil
+	}
 	return collection.Map(fields.Cast[[]any](v.Val), fields.Cast[float64])
 }
 
 func (v *value) Type() v1alpha1.Field_Type {
+	if v == nil {
+		return v1alpha1.Field_string
+	}
 	return v.Typ
 }
 
 func (v *value) Items() *v1alpha1.Field_Type {
+	if v == nil {
+		return nil
+	}
 	return v.ItemsType
 }
 

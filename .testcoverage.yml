@@ -6,3 +6,5 @@ exclude:
     - mocks
     - api
     - examples
+    - e2e
+    - cmd

@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"golang.org/x/exp/constraints"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func Cast[T any](v any) (out T) {
@@ -23,6 +24,11 @@ func As[T any](v any) (out T, ok bool) {
 
 func FormatFloat[F constraints.Float](f F) string {
 	return strconv.FormatFloat(float64(f), 'g', 3, 64)
+}
+
+func ParseFloat[F constraints.Float](s string) (F, error) {
+	v, err := strconv.ParseFloat(s, 64)
+	return F(v), err
 }
 
 // SubInt64 is basically constraints.Integer but excludes any types that don't fit into int64
@@ -50,4 +56,14 @@ func NewProvider[T any](t Provider[T]) Provider[T] {
 		}
 		return val
 	}
+}
+
+func NewListValue(items ...any) *structpb.ListValue {
+	v, _ := structpb.NewList(items)
+	return v
+}
+
+func NewValue(a any) *structpb.Value {
+	v, _ := structpb.NewValue(a)
+	return v
 }

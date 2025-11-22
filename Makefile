@@ -19,7 +19,7 @@ fmt:
 	golangci-lint fmt
 
 test:
-	go test -v ./... -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
+	go test -count=1 -v ./... -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
 
 cover:
 	${GOBIN}/go-test-coverage --config=./.testcoverage.yml

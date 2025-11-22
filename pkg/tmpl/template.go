@@ -30,6 +30,12 @@ func (g *goFactory) NewTemplate(tmpl []byte) (Template, error) {
 	t, err := template.New("").Funcs(template.FuncMap{
 		"lower": strings.ToLower,
 		"upper": strings.ToUpper,
+		"first": func(s string) string {
+			if len(s) == 0 {
+				return ""
+			}
+			return string([]rune(s)[0])
+		},
 		"capitalize": func(s string) string {
 			if len(s) == 0 {
 				return s

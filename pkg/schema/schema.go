@@ -12,10 +12,10 @@ import (
 func NewSchema(sch *v1alpha1.Schema) (*Schema, error) {
 	out := &Schema{
 		Proto:  sch,
-		Fields: make([]*Field, 0, len(sch.Fields)),
+		Fields: make([]*Field, 0, len(sch.GetFields())),
 	}
 
-	for _, field := range sch.Fields {
+	for _, field := range sch.GetFields() {
 		f, err := NewField(field)
 		if err != nil {
 			return nil, fmt.Errorf("field '%s': %w", field.Name, err)
@@ -56,7 +56,9 @@ func NewSchema(sch *v1alpha1.Schema) (*Schema, error) {
 
 func NewField(p *v1alpha1.Field) (*Field, error) {
 	out := &Field{
-		Proto: p,
+		Proto:   p,
+		Default: p.Default.AsInterface(),
+		Enum:    p.Enum.AsSlice(),
 	}
 
 	return out, nil
