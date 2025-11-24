@@ -119,6 +119,8 @@ github.com/rodaine/protogofakeit v0.1.1 h1:ZKouljuRM3A+TArppfBqnH8tGZHOwM/pjvtXe
 github.com/rodaine/protogofakeit v0.1.1/go.mod h1:pXn/AstBYMaSfc1/RqH3N82pBuxtWgejz1AlYpY1mI0=
 github.com/skiff-sh/config v0.0.0-20250921220812-93e59348136e h1:08WdkwJndYkTiKFd9USQId6SV0z3yPoIALy28mcP+Wo=
 github.com/skiff-sh/config v0.0.0-20250921220812-93e59348136e/go.mod h1:wyev5UmLf9Tps6F4uWB0TPxZO4jxN3NRGFRdo7GaSdc=
+github.com/skiff-sh/skiff/api/go v0.0.0-20251124224920-1168d4d63dc6 h1:lrRSqtKcCkSbxDJ+OXE/8syouA15Kr35jBU2m3ABwBQ=
+github.com/skiff-sh/skiff/api/go v0.0.0-20251124224920-1168d4d63dc6/go.mod h1:8udSeJq1KuANWcfxb5LryQHUgag3t0mCCKXWouijnDg=
 github.com/stoewer/go-strcase v1.3.1 h1:iS0MdW+kVTxgMoE1LAZyMiYJFKlOzLooE4MxjirtkAs=
 github.com/stoewer/go-strcase v1.3.1/go.mod h1:fAH5hQ5pehh+j3nZfvwdk2RgEgQjAoM8wodgtPmh1xo=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

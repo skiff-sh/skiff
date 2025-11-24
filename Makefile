@@ -5,7 +5,11 @@ GOBIN ?= $$(go env GOPATH)/bin
 .PHONY: *
 
 all:
-	cd cmd/skiff && go build -o ../../skiff main.go
+	cd cmd/skiff && go build -o ../../bin/skiff main.go
+
+work:
+	go work init
+	go work use api/go
 
 mocks:
 	rm -rf pkg/mocks
@@ -41,3 +45,7 @@ croc.receive:
 
 croc: croc.receive gen
 
+update.api:
+	go get github.com/skiff-sh/skiff/api/go
+	cd sdk-go && go get github.com/skiff-sh/skiff/api/go
+	cd examples/go-fiber-controller && go get github.com/skiff-sh/skiff/api/go

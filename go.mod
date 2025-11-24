@@ -3,14 +3,15 @@ module github.com/skiff-sh/skiff
 go 1.25.3
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.10-20250912141014-52f32327d4b0.1
 	buf.build/go/protovalidate v1.0.1
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/huh v0.8.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/x/exp/teatest v0.0.0-20251118172736-77d017256798
 	github.com/charmbracelet/x/term v0.2.2
+	github.com/google/go-cmp v0.7.0
 	github.com/skiff-sh/config v0.0.0-20250921220812-93e59348136e
+	github.com/skiff-sh/skiff/api/go v0.0.0-20251124224920-1168d4d63dc6
 	github.com/stretchr/testify v1.11.1
 	github.com/traefik/yaegi v0.16.2-0.20250521203204-d93266d013f3
 	github.com/urfave/cli/v3 v3.6.1
@@ -20,6 +21,7 @@ require (
 )
 
 require (
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.10-20250912141014-52f32327d4b0.1 // indirect
 	cel.dev/expr v0.25.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
@@ -42,7 +44,6 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/google/cel-go v0.26.1 // indirect
-	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/parsers/json v1.0.0 // indirect
 	github.com/knadh/koanf/parsers/yaml v1.1.0 // indirect

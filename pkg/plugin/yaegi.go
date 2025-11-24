@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/skiff-sh/skiff/sdk-go/skiff"
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
 
@@ -52,6 +53,9 @@ var skiffSymbols = map[string]map[string]reflect.Value{
 	"github.com/skiff-sh/skiff/api/go/skiff/plugin/v1alpha1/v1alpha1": {
 		"WriteFileRequest":  reflect.ValueOf((*v1alpha1.WriteFileRequest)(nil)),
 		"WriteFileResponse": reflect.ValueOf((*v1alpha1.WriteFileResponse)(nil)),
+	},
+	"github.com/skiff-sh/skiff/sdk-go/skiff/skiff": {
+		"Context": reflect.ValueOf((*skiff.Context)(nil)),
 	},
 }
 

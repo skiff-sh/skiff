@@ -35,4 +35,4 @@ go.work.sum
 examples/**/public
 
 # generated binary
-skiff
+bin

@@ -7,7 +7,6 @@
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -24,8 +23,10 @@ const (
 
 type WriteFileRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The spec for the file defined in the registry.
-	File          *v1alpha1.File `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
+	// The source path of this plugin.
+	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	// The intended target filepath to be edited/created by this plugin.
+	Target        string `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -60,11 +61,18 @@ func (*WriteFileRequest) Descriptor() ([]byte, []int) {
 	return file_skiff_plugin_v1alpha1_plugin_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *WriteFileRequest) GetFile() *v1alpha1.File {
+func (x *WriteFileRequest) GetPath() string {
 	if x != nil {
-		return x.File
+		return x.Path
 	}
-	return nil
+	return ""
+}
+
+func (x *WriteFileRequest) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
 }
 
 type WriteFileResponse struct {
@@ -116,9 +124,10 @@ var File_skiff_plugin_v1alpha1_plugin_proto protoreflect.FileDescriptor
 
 const file_skiff_plugin_v1alpha1_plugin_proto_rawDesc = "" +
 	"\n" +
-	"\"skiff/plugin/v1alpha1/plugin.proto\x12\x15skiff.plugin.v1alpha1\x1a&skiff/registry/v1alpha1/registry.proto\"E\n" +
-	"\x10WriteFileRequest\x121\n" +
-	"\x04file\x18\x01 \x01(\v2\x1d.skiff.registry.v1alpha1.FileR\x04file\"/\n" +
+	"\"skiff/plugin/v1alpha1/plugin.proto\x12\x15skiff.plugin.v1alpha1\">\n" +
+	"\x10WriteFileRequest\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\x12\x16\n" +
+	"\x06target\x18\x02 \x01(\tR\x06target\"/\n" +
 	"\x11WriteFileResponse\x12\x1a\n" +
 	"\bcontents\x18\x01 \x01(\fR\bcontentsB\xd6\x01\n" +
 	"\x19com.skiff.plugin.v1alpha1B\vPluginProtoP\x01Z6github.com/skiff-sh/skiff/api/go/skiff/plugin/v1alpha1\xa2\x02\x03SPX\xaa\x02\x15Skiff.Plugin.V1alpha1\xca\x02\x15Skiff\\Plugin\\V1alpha1\xe2\x02!Skiff\\Plugin\\V1alpha1\\GPBMetadata\xea\x02\x17Skiff::Plugin::V1alpha1b\x06proto3"
@@ -139,15 +148,13 @@ var file_skiff_plugin_v1alpha1_plugin_proto_msgTypes = make([]protoimpl.MessageI
 var file_skiff_plugin_v1alpha1_plugin_proto_goTypes = []any{
 	(*WriteFileRequest)(nil),  // 0: skiff.plugin.v1alpha1.WriteFileRequest
 	(*WriteFileResponse)(nil), // 1: skiff.plugin.v1alpha1.WriteFileResponse
-	(*v1alpha1.File)(nil),     // 2: skiff.registry.v1alpha1.File
 }
 var file_skiff_plugin_v1alpha1_plugin_proto_depIdxs = []int32{
-	2, // 0: skiff.plugin.v1alpha1.WriteFileRequest.file:type_name -> skiff.registry.v1alpha1.File
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // [0:0] is the sub-list for method output_type
+	0, // [0:0] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_skiff_plugin_v1alpha1_plugin_proto_init() }

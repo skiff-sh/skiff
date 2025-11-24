@@ -2,13 +2,14 @@ syntax = "proto3";
 
 package skiff.plugin.v1alpha1;
 
-import "skiff/registry/v1alpha1/registry.proto";
-
 option go_package = "github.com/skiff-sh/skiff/api/go/skiff/plugin/v1alpha1";
 
 message WriteFileRequest {
-  // The spec for the file defined in the registry.
-  skiff.registry.v1alpha1.File file = 1;
+  // The source path of this plugin.
+  string path = 1;
+
+  // The intended target filepath to be edited/created by this plugin.
+  string target = 2;
 }
 
 message WriteFileResponse {
