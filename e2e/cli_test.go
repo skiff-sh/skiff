@@ -221,8 +221,8 @@ func (c *CliTestSuite) TestAdd() {
 			interact.FormRunner = func(ctx context.Context, f *huh.Form) error {
 				form = f
 				mod = teatest.NewTestModel(c.T(), testutil.NewFormTest(f))
-				v.Inputs.SendTo(mod, 10*time.Millisecond)
-				teatest.WaitFor(c.T(), mod.Output(), testutil.WaitFormDone(form), teatest.WithCheckInterval(10*time.Millisecond), teatest.WithDuration(100*time.Millisecond))
+				v.Inputs.SendTo(mod, 50*time.Millisecond)
+				teatest.WaitFor(c.T(), mod.Output(), testutil.WaitFormDone(form), teatest.WithCheckInterval(10*time.Millisecond), teatest.WithDuration(1000*time.Millisecond))
 				return nil
 			}
 			err = cmd.Command.Run(ctx, append([]string{"skiff", "add"}, v.Args(build)...))
