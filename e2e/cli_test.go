@@ -225,6 +225,7 @@ func (c *CliTestSuite) TestAdd() {
 				teatest.WaitFor(c.T(), mod.Output(), testutil.WaitFormDone(form), teatest.WithCheckInterval(10*time.Millisecond), teatest.WithDuration(1000*time.Millisecond))
 				return nil
 			}
+
 			err = cmd.Command.Run(ctx, append([]string{"skiff", "add"}, v.Args(build)...))
 			if !c.NoError(err) {
 				return
