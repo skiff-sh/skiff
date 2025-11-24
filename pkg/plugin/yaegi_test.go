@@ -13,7 +13,7 @@ type YaegiTestSuite struct {
 	suite.Suite
 }
 
-func (y *YaegiTestSuite) Test() {
+func (y *YaegiTestSuite) TestSimplePlugin() {
 	ctx := y.T().Context()
 	fileutil.CallerPath(1)
 	pl := &Plugin{

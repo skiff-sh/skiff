@@ -101,7 +101,7 @@
           "type": "string"
         },
         "type": {
-          "description": "The type of the file.",
+          "description": "The type of the file. Defaults to plain.",
           "enum": [
             "plain",
             "template",

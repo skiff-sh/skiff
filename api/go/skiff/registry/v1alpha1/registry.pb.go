@@ -405,7 +405,7 @@ type File struct {
 	Target string `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
 	// The raw contents of the file. You do not need to populate this manually. This field is set if the data is binary. It is mutually exclusive with the content field.
 	Raw []byte `protobuf:"bytes,3,opt,name=raw,proto3,oneof" json:"raw,omitempty"`
-	// The type of the file.
+	// The type of the file. Defaults to plain.
 	Type File_Type `protobuf:"varint,4,opt,name=type,proto3,enum=skiff.registry.v1alpha1.File_Type" json:"type,omitempty"`
 	// The text contents of the file. This field will be populated if the file contains valid UTF-8 text. Otherwise, the contents are set in the raw field. You do not need to populate this manually.
 	Content       *string `protobuf:"bytes,5,opt,name=content,proto3,oneof" json:"content,omitempty"`

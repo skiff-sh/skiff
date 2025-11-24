@@ -11,6 +11,11 @@
           "type": "template",
           "path": "templates/controller.tmpl",
           "target": "controller/{{.name}}.go"
+        },
+        {
+          "type": "plugin",
+          "path": "plugins/plugin.go",
+          "target": "controller/controller.go"
         }
       ],
       "schema": {

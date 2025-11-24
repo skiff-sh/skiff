@@ -28,6 +28,7 @@ test.cover: test cover
 
 proto:
 	buf lint
+	rm -rf api/go/*.pb.go
 	buf generate
 
 gen: mocks proto

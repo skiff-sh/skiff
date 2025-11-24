@@ -129,7 +129,7 @@ message File {
   // The raw contents of the file. You do not need to populate this manually. This field is set if the data is binary. It is mutually exclusive with the content field.
   optional bytes raw = 3;
 
-  // The type of the file.
+  // The type of the file. Defaults to plain.
   Type type = 4;
 
   // The text contents of the file. This field will be populated if the file contains valid UTF-8 text. Otherwise, the contents are set in the raw field. You do not need to populate this manually.

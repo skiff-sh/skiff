@@ -7,6 +7,7 @@
 package v1alpha1
 
 import (
+	v1alpha1 "github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -21,71 +22,17 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type FileSpec struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The path relative to the project root.
-	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
-	// The contents of the file
-	Content       []byte `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *FileSpec) Reset() {
-	*x = FileSpec{}
-	mi := &file_skiff_plugin_v1alpha1_plugin_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *FileSpec) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*FileSpec) ProtoMessage() {}
-
-func (x *FileSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_skiff_plugin_v1alpha1_plugin_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use FileSpec.ProtoReflect.Descriptor instead.
-func (*FileSpec) Descriptor() ([]byte, []int) {
-	return file_skiff_plugin_v1alpha1_plugin_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *FileSpec) GetPath() string {
-	if x != nil {
-		return x.Path
-	}
-	return ""
-}
-
-func (x *FileSpec) GetContent() []byte {
-	if x != nil {
-		return x.Content
-	}
-	return nil
-}
-
 type WriteFileRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The file in question to write.
-	File          *FileSpec `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
+	// The spec for the file defined in the registry.
+	File          *v1alpha1.File `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WriteFileRequest) Reset() {
 	*x = WriteFileRequest{}
-	mi := &file_skiff_plugin_v1alpha1_plugin_proto_msgTypes[1]
+	mi := &file_skiff_plugin_v1alpha1_plugin_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -97,7 +44,7 @@ func (x *WriteFileRequest) String() string {
 func (*WriteFileRequest) ProtoMessage() {}
 
 func (x *WriteFileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_skiff_plugin_v1alpha1_plugin_proto_msgTypes[1]
+	mi := &file_skiff_plugin_v1alpha1_plugin_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -110,10 +57,10 @@ func (x *WriteFileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WriteFileRequest.ProtoReflect.Descriptor instead.
 func (*WriteFileRequest) Descriptor() ([]byte, []int) {
-	return file_skiff_plugin_v1alpha1_plugin_proto_rawDescGZIP(), []int{1}
+	return file_skiff_plugin_v1alpha1_plugin_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *WriteFileRequest) GetFile() *FileSpec {
+func (x *WriteFileRequest) GetFile() *v1alpha1.File {
 	if x != nil {
 		return x.File
 	}
@@ -130,7 +77,7 @@ type WriteFileResponse struct {
 
 func (x *WriteFileResponse) Reset() {
 	*x = WriteFileResponse{}
-	mi := &file_skiff_plugin_v1alpha1_plugin_proto_msgTypes[2]
+	mi := &file_skiff_plugin_v1alpha1_plugin_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -142,7 +89,7 @@ func (x *WriteFileResponse) String() string {
 func (*WriteFileResponse) ProtoMessage() {}
 
 func (x *WriteFileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_skiff_plugin_v1alpha1_plugin_proto_msgTypes[2]
+	mi := &file_skiff_plugin_v1alpha1_plugin_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -155,7 +102,7 @@ func (x *WriteFileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WriteFileResponse.ProtoReflect.Descriptor instead.
 func (*WriteFileResponse) Descriptor() ([]byte, []int) {
-	return file_skiff_plugin_v1alpha1_plugin_proto_rawDescGZIP(), []int{2}
+	return file_skiff_plugin_v1alpha1_plugin_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *WriteFileResponse) GetContents() []byte {
@@ -169,12 +116,9 @@ var File_skiff_plugin_v1alpha1_plugin_proto protoreflect.FileDescriptor
 
 const file_skiff_plugin_v1alpha1_plugin_proto_rawDesc = "" +
 	"\n" +
-	"\"skiff/plugin/v1alpha1/plugin.proto\x12\x15skiff.plugin.v1alpha1\"8\n" +
-	"\bFileSpec\x12\x12\n" +
-	"\x04path\x18\x01 \x01(\tR\x04path\x12\x18\n" +
-	"\acontent\x18\x02 \x01(\fR\acontent\"G\n" +
-	"\x10WriteFileRequest\x123\n" +
-	"\x04file\x18\x01 \x01(\v2\x1f.skiff.plugin.v1alpha1.FileSpecR\x04file\"/\n" +
+	"\"skiff/plugin/v1alpha1/plugin.proto\x12\x15skiff.plugin.v1alpha1\x1a&skiff/registry/v1alpha1/registry.proto\"E\n" +
+	"\x10WriteFileRequest\x121\n" +
+	"\x04file\x18\x01 \x01(\v2\x1d.skiff.registry.v1alpha1.FileR\x04file\"/\n" +
 	"\x11WriteFileResponse\x12\x1a\n" +
 	"\bcontents\x18\x01 \x01(\fR\bcontentsB\xd6\x01\n" +
 	"\x19com.skiff.plugin.v1alpha1B\vPluginProtoP\x01Z6github.com/skiff-sh/skiff/api/go/skiff/plugin/v1alpha1\xa2\x02\x03SPX\xaa\x02\x15Skiff.Plugin.V1alpha1\xca\x02\x15Skiff\\Plugin\\V1alpha1\xe2\x02!Skiff\\Plugin\\V1alpha1\\GPBMetadata\xea\x02\x17Skiff::Plugin::V1alpha1b\x06proto3"
@@ -191,14 +135,14 @@ func file_skiff_plugin_v1alpha1_plugin_proto_rawDescGZIP() []byte {
 	return file_skiff_plugin_v1alpha1_plugin_proto_rawDescData
 }
 
-var file_skiff_plugin_v1alpha1_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_skiff_plugin_v1alpha1_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_skiff_plugin_v1alpha1_plugin_proto_goTypes = []any{
-	(*FileSpec)(nil),          // 0: skiff.plugin.v1alpha1.FileSpec
-	(*WriteFileRequest)(nil),  // 1: skiff.plugin.v1alpha1.WriteFileRequest
-	(*WriteFileResponse)(nil), // 2: skiff.plugin.v1alpha1.WriteFileResponse
+	(*WriteFileRequest)(nil),  // 0: skiff.plugin.v1alpha1.WriteFileRequest
+	(*WriteFileResponse)(nil), // 1: skiff.plugin.v1alpha1.WriteFileResponse
+	(*v1alpha1.File)(nil),     // 2: skiff.registry.v1alpha1.File
 }
 var file_skiff_plugin_v1alpha1_plugin_proto_depIdxs = []int32{
-	0, // 0: skiff.plugin.v1alpha1.WriteFileRequest.file:type_name -> skiff.plugin.v1alpha1.FileSpec
+	2, // 0: skiff.plugin.v1alpha1.WriteFileRequest.file:type_name -> skiff.registry.v1alpha1.File
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -217,7 +161,7 @@ func file_skiff_plugin_v1alpha1_plugin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_skiff_plugin_v1alpha1_plugin_proto_rawDesc), len(file_skiff_plugin_v1alpha1_plugin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
