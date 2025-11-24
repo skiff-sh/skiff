@@ -1,0 +1,10 @@
+profile: cover.out
+threshold:
+  total: 70
+exclude:
+  paths:
+    - mocks
+    - api
+    - examples
+    - e2e
+    - cmd

@@ -1,0 +1,98 @@
+{
+  "$defs": {
+    "google.protobuf.ListValue.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "List Value",
+      "type": "array"
+    },
+    "google.protobuf.Value.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Value"
+    },
+    "skiff.registry.v1alpha1.Field.SubField.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "enum": {
+          "$ref": "#/$defs/google.protobuf.ListValue.jsonschema.strict.json",
+          "description": "Restrict your options to a set of values to choose."
+        },
+        "type": {
+          "description": "Required. Can be a string or number.",
+          "enum": [
+            "string",
+            "number"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "Sub Field",
+      "type": "object"
+    },
+    "skiff.registry.v1alpha1.Field.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "$ref": "#/$defs/google.protobuf.Value.jsonschema.strict.json",
+          "description": "The default value. If set, the field will be marked as optional. If the enum field is set, this field must be one of the enum values."
+        },
+        "description": {
+          "description": "A short description of the field. This is highly recommended to provide context to all consumers of your package.",
+          "type": "string"
+        },
+        "enum": {
+          "$ref": "#/$defs/google.protobuf.ListValue.jsonschema.strict.json",
+          "description": "Restrict your options to a set of values to choose."
+        },
+        "items": {
+          "$ref": "#/$defs/skiff.registry.v1alpha1.Field.SubField.jsonschema.strict.json",
+          "description": "If the type is set to \"array\", this specifies the underlying type. Required if type is \"array\"."
+        },
+        "name": {
+          "description": "The name of the field. This must be unique between all fields.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "type": {
+          "description": "The expected type of the field.",
+          "enum": [
+            "string",
+            "bool",
+            "number",
+            "array"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ],
+      "title": "Field",
+      "type": "object"
+    },
+    "skiff.registry.v1alpha1.Schema.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "fields": {
+          "items": {
+            "$ref": "#/$defs/skiff.registry.v1alpha1.Field.jsonschema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Schema",
+      "type": "object"
+    }
+  },
+  "$id": "skiff.registry.v1alpha1.Schema.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/skiff.registry.v1alpha1.Schema.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

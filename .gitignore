@@ -28,5 +28,11 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
+
+# Don't commit builds of examples
+examples/**/public
+
+# generated binary
+skiff

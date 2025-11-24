@@ -1,0 +1,15 @@
+version: v2
+clean: true
+managed:
+  enabled: true
+plugins:
+  - remote: buf.build/bufbuild/validate-go
+    out: api/go
+    opt: paths=source_relative
+  - remote: buf.build/protocolbuffers/go
+    out: api/go
+    opt: paths=source_relative
+  - remote: buf.build/bufbuild/protoschema-jsonschema
+    out: api/jsonschema
+    opt:
+      - target=json-strict-bundle

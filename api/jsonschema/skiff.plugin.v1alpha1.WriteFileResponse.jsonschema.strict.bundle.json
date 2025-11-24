@@ -1,0 +1,23 @@
+{
+  "$defs": {
+    "skiff.plugin.v1alpha1.WriteFileResponse.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "contents": {
+          "description": "The new contents of the file.",
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contents"
+      ],
+      "title": "Write File Response",
+      "type": "object"
+    }
+  },
+  "$id": "skiff.plugin.v1alpha1.WriteFileResponse.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/skiff.plugin.v1alpha1.WriteFileResponse.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
