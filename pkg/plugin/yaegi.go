@@ -1,12 +1,14 @@
 package plugin
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 
-	"github.com/skiff-sh/skiff/api/go/skiff/plugin/v1alpha1"
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
+
+	"github.com/skiff-sh/skiff/api/go/skiff/plugin/v1alpha1"
 )
 
 func NewYaegiInterpreter(plug *Plugin) (Interpreter, error) {
@@ -40,7 +42,7 @@ func NewYaegiInterpreter(plug *Plugin) (Interpreter, error) {
 
 	o.WriteFileFunc, err = o.Interpreter.Eval("WriteFile")
 	if err != nil {
-		return nil, fmt.Errorf("missing 'WriteFile' func")
+		return nil, errors.New("missing 'WriteFile' func")
 	}
 
 	return o, nil
@@ -58,7 +60,10 @@ type yaegiInterpreter struct {
 	WriteFileFunc reflect.Value
 }
 
-func (y *yaegiInterpreter) WriteFile(ctx *Context, req *v1alpha1.WriteFileRequest) (*v1alpha1.WriteFileResponse, error) {
+func (y *yaegiInterpreter) WriteFile(
+	ctx *Context,
+	req *v1alpha1.WriteFileRequest,
+) (*v1alpha1.WriteFileResponse, error) {
 	args := []reflect.Value{reflect.ValueOf(ctx.Ctx), reflect.ValueOf(req)}
 	results := y.WriteFileFunc.Call(args)
 	if len(results) > 1 && results[1].Interface() != nil {

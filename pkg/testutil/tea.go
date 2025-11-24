@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/x/exp/teatest"
+
 	"github.com/skiff-sh/skiff/pkg/collection"
 )
 
@@ -24,7 +25,7 @@ const (
 type TeaWaitCond = func(b []byte) bool
 
 func WaitFormDone(f *huh.Form) TeaWaitCond {
-	return func(b []byte) bool {
+	return func(_ []byte) bool {
 		return f.State != huh.StateNormal
 	}
 }
@@ -103,29 +104,3 @@ func (t *teaInput) Msg() tea.Msg {
 		Runes: []rune(t.Str),
 	}
 }
-
-func NewFormTest(f *huh.Form) tea.Model {
-	return &model{
-		Form: f,
-	}
-}
-
-type TickMsg time.Time
-
-type model struct{ Form *huh.Form }
-
-func (m *model) Init() tea.Cmd {
-	return tea.Batch(tea.Tick(5*time.Millisecond, func(t time.Time) tea.Msg {
-		return TickMsg(t)
-	}), m.Form.Init())
-}
-func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if m.Form.State != huh.StateNormal {
-		return m, tea.Quit
-	}
-
-	_, cmd := m.Form.Update(msg)
-
-	return m, cmd
-}
-func (m *model) View() string { return m.Form.View() }

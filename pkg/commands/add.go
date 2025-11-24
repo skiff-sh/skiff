@@ -10,12 +10,13 @@ import (
 	"time"
 
 	"github.com/charmbracelet/huh"
+	"github.com/urfave/cli/v3"
+
 	"github.com/skiff-sh/skiff/pkg/filesystem"
 	"github.com/skiff-sh/skiff/pkg/interact"
 	"github.com/skiff-sh/skiff/pkg/registry"
 	"github.com/skiff-sh/skiff/pkg/schema"
 	"github.com/skiff-sh/skiff/pkg/tmpl"
-	"github.com/urfave/cli/v3"
 )
 
 var AddArgPackages = &cli.StringArgs{
@@ -41,6 +42,11 @@ var AddFlagRoot = &cli.StringFlag{
 	Name:    "root",
 	Usage:   "The root of your project. All files are written relative to the root. Defaults to the cwd.",
 	Aliases: []string{"r"},
+}
+
+type AddAction struct {
+	Packages     []*registry.PackageGenerator
+	PackageFlags map[string][]*schema.Flag
 }
 
 // NewAddAction constructor for AddAction. Packages should be retrieved prior to the construction
@@ -79,12 +85,12 @@ func FlagsFromPackages(nonInteractive bool, pkgs []*registry.PackageGenerator) (
 		for _, field := range v.Schema.Fields {
 			fl := schema.FieldToCLIFlag(field)
 			if fl == nil {
-				return nil, fmt.Errorf("invalid flag %s", v.Proto.Name)
+				return nil, fmt.Errorf("invalid flag %s", v.Proto.GetName())
 			}
 
-			fl.Package = v.Proto.Name
-			namespaced := v.Proto.Name + "." + fl.Accessor.Name()
-			fl.Accessor.SetCategory(fmt.Sprintf("%s data", v.Proto.Name))
+			fl.Package = v.Proto.GetName()
+			namespaced := v.Proto.GetName() + "." + fl.Accessor.Name()
+			fl.Accessor.SetCategory(fmt.Sprintf("%s data", v.Proto.GetName()))
 			if multiplePackages {
 				// Names must be namespaces to avoid conflicts.
 				fl.Accessor.SetName(namespaced)
@@ -97,7 +103,7 @@ func FlagsFromPackages(nonInteractive bool, pkgs []*registry.PackageGenerator) (
 			}
 			flags = append(flags, fl)
 		}
-		out[v.Proto.Name] = flags
+		out[v.Proto.GetName()] = flags
 	}
 
 	return out, nil
@@ -106,11 +112,6 @@ func FlagsFromPackages(nonInteractive bool, pkgs []*registry.PackageGenerator) (
 type AddArgs struct {
 	ProjectRoot filesystem.Filesystem
 	CreateAll   bool
-}
-
-type AddAction struct {
-	Packages     []*registry.PackageGenerator
-	PackageFlags map[string][]*schema.Flag
 }
 
 func (a *AddAction) Act(ctx context.Context, args *AddArgs) error {
@@ -137,19 +138,21 @@ func (a *AddAction) Act(ctx context.Context, args *AddArgs) error {
 				return errors.New("failed to create field")
 			}
 
-			ff.Accessor.SetDescription(strings.Join([]string{fl.Field.Proto.GetDescription(), ff.Accessor.Description()}, ". "))
-			ff.Accessor.SetTitle(fl.Field.Proto.Name)
+			ff.Accessor.SetDescription(
+				strings.Join([]string{fl.Field.Proto.GetDescription(), ff.Accessor.Description()}, ". "),
+			)
+			ff.Accessor.SetTitle(fl.Field.Proto.GetName())
 			formFields = append(formFields, ff)
 		}
 
 		pkg := a.Packages[slices.IndexFunc(a.Packages, func(p *registry.PackageGenerator) bool {
-			return p.Proto.Name == packageName
+			return p.Proto.GetName() == packageName
 		})]
 
 		pkgFormFields[packageName] = formFields
 
 		group := interact.NewHuhGroup(schema.FlattenHuhFields(formFields)...)
-		group.Title(fmt.Sprintf("Package %s", pkg.Proto.Name)).Description(pkg.Proto.Description)
+		group.Title(fmt.Sprintf("Package %s", pkg.Proto.GetName())).Description(pkg.Proto.GetDescription())
 		groups = append(groups, group)
 	}
 
@@ -166,22 +169,22 @@ func (a *AddAction) Act(ctx context.Context, args *AddArgs) error {
 	}
 
 	confirmer := func(ctx context.Context, f *registry.File) (bool, error) {
-		prompt := ""
-		if args.ProjectRoot.Exists(f.Proto.Target) {
-			prompt = fmt.Sprintf("Edit file %s", f.Proto.Target)
+		var prompt string
+		if args.ProjectRoot.Exists(f.Proto.GetTarget()) {
+			prompt = fmt.Sprintf("Edit file %s", f.Proto.GetTarget())
 		} else {
-			prompt = fmt.Sprintf("Create file %s", f.Proto.Target)
+			prompt = fmt.Sprintf("Create file %s", f.Proto.GetTarget())
 		}
 		return interact.Confirm(ctx, prompt)
 	}
 	if !args.CreateAll {
-		confirmer = func(ctx context.Context, f *registry.File) (bool, error) {
+		confirmer = func(_ context.Context, _ *registry.File) (bool, error) {
 			return true, nil
 		}
 	}
 
 	for _, gen := range a.Packages {
-		data := data.Package(gen.Proto.Name)
+		data := data.Package(gen.Proto.GetName())
 
 		pkg, err := gen.Generate(data.RawData())
 		if err != nil {
@@ -200,7 +203,7 @@ func (a *AddAction) Act(ctx context.Context, args *AddArgs) error {
 
 			err = v.WriteTo(args.ProjectRoot)
 			if err != nil {
-				interact.Errorf("Failed to write file %s: %s", v.Proto.Target, err.Error())
+				interact.Errorf("Failed to write file %s: %s", v.Proto.GetTarget(), err.Error())
 			}
 		}
 	}

@@ -31,7 +31,7 @@ func ParseFloat[F constraints.Float](s string) (F, error) {
 	return F(v), err
 }
 
-// SubInt64 is basically constraints.Integer but excludes any types that don't fit into int64
+// SubInt64 is basically constraints.Integer but excludes any types that don't fit into int64.
 type SubInt64 interface {
 	constraints.Signed |
 		~uint | ~uint8 | ~uint16 | ~uint32

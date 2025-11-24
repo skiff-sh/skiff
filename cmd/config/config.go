@@ -8,7 +8,7 @@ import (
 )
 
 type Config struct {
-	Log config.Log `koanf:"log" yaml:"log" json:"log"`
+	Log config.Log `koanf:"log"  yaml:"log"  json:"log"`
 	// The root of the project. If not set, uses cwd.
 	Root string `koanf:"root" yaml:"root" json:"root"`
 }

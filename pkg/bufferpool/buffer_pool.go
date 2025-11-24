@@ -12,6 +12,7 @@ var bytesBufferPool = sync.Pool{
 }
 
 func GetBytesBuffer() *bytes.Buffer {
+	//nolint:errcheck // Pool contains one type.
 	buf := bytesBufferPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	return buf

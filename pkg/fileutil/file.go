@@ -66,11 +66,13 @@ func FlatMapFS(f fs.FS) MapFS {
 
 	_ = fs.WalkDir(f, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
+			//nolint:nilerr // only testing.
 			return nil
 		}
 
 		b, err := fs.ReadFile(f, path)
 		if err != nil {
+			//nolint:nilerr // only testing.
 			return nil
 		}
 
@@ -85,14 +87,12 @@ func FlatMapFS(f fs.FS) MapFS {
 }
 
 // SplitFilename splits a filename into base name and extension.
-// For example: "asd.txt" → ("asd", "txt")
+// For example: "asd.txt" → ("asd", "txt").
 func SplitFilename(filename string) (base, ext string) {
 	ext = filepath.Ext(filename) // e.g. ".txt"
 	base = strings.TrimSuffix(filename, ext)
 
 	// Remove leading dot from extension, if present
-	if strings.HasPrefix(ext, ".") {
-		ext = ext[1:]
-	}
+	ext = strings.TrimPrefix(ext, ".")
 	return base, ext
 }

@@ -9,12 +9,13 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/x/exp/teatest"
 	"github.com/skiff-sh/config/ptr"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/fields"
 	"github.com/skiff-sh/skiff/pkg/interact"
 	"github.com/skiff-sh/skiff/pkg/testutil"
 	"github.com/skiff-sh/skiff/pkg/valid"
-	"github.com/stretchr/testify/suite"
 )
 
 type FormTestSuite struct {
@@ -214,7 +215,13 @@ func (f *FormTestSuite) TestFormField() {
 			} else {
 				waiter = testutil.WaitFormDone(form)
 			}
-			teatest.WaitFor(f.T(), mod.Output(), waiter, teatest.WithCheckInterval(10*time.Millisecond), teatest.WithDuration(100*time.Millisecond))
+			teatest.WaitFor(
+				f.T(),
+				mod.Output(),
+				waiter,
+				teatest.WithCheckInterval(10*time.Millisecond),
+				teatest.WithDuration(100*time.Millisecond),
+			)
 
 			if v.ExpectedValue == nil {
 				f.Nil(ff.Value().Any())

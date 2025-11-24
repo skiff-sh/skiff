@@ -38,27 +38,20 @@ type Loader interface {
 	LoadPackage(ctx context.Context, path string) (*PackageGenerator, error)
 }
 
-func NewFileLoader(tmplFact tmpl.Factory) *FileLoader {
-	return &FileLoader{
-		TemplateFactory: tmplFact,
-	}
-}
-
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
-}
-
-func NewHTTPLoader(tmplFact tmpl.Factory, cl HTTPClient) *HTTPLoader {
-	return &HTTPLoader{
-		Client:          cl,
-		TemplateFactory: tmplFact,
-	}
 }
 
 var _ Loader = (*FileLoader)(nil)
 
 type FileLoader struct {
 	TemplateFactory tmpl.Factory
+}
+
+func NewFileLoader(tmplFact tmpl.Factory) *FileLoader {
+	return &FileLoader{
+		TemplateFactory: tmplFact,
+	}
 }
 
 func (f *FileLoader) LoadRegistry(_ context.Context, path string) (*v1alpha1.Registry, error) {
@@ -93,6 +86,13 @@ var _ Loader = (*HTTPLoader)(nil)
 type HTTPLoader struct {
 	Client          HTTPClient
 	TemplateFactory tmpl.Factory
+}
+
+func NewHTTPLoader(tmplFact tmpl.Factory, cl HTTPClient) *HTTPLoader {
+	return &HTTPLoader{
+		Client:          cl,
+		TemplateFactory: tmplFact,
+	}
 }
 
 func (h *HTTPLoader) LoadRegistry(ctx context.Context, path string) (*v1alpha1.Registry, error) {
@@ -148,10 +148,16 @@ func ValidateRegistry(reg *v1alpha1.Registry, fsys filesystem.Filesystem) error 
 		return err
 	}
 
-	for _, pkg := range reg.Packages {
-		for _, v := range pkg.Files {
-			if _, err := fsys.AsRel(v.Target); err != nil {
-				return fmt.Errorf("file %s in package %s has an invalid target %s: %w", v.Path, pkg.Name, v.Target, err)
+	for _, pkg := range reg.GetPackages() {
+		for _, v := range pkg.GetFiles() {
+			if _, err := fsys.AsRel(v.GetTarget()); err != nil {
+				return fmt.Errorf(
+					"file %s in package %s has an invalid target %s: %w",
+					v.GetPath(),
+					pkg.GetName(),
+					v.GetTarget(),
+					err,
+				)
 			}
 		}
 	}
@@ -166,8 +172,14 @@ func ValidatePackage(pkg *Package, fsys filesystem.Filesystem) error {
 	}
 
 	for _, v := range pkg.Files {
-		if _, err := fsys.AsRel(v.Proto.Target); err != nil {
-			return fmt.Errorf("file %s in package %s has an invalid target %s: %w", v.Proto.Path, pkg.Proto.Name, v.Proto.Target, err)
+		if _, err := fsys.AsRel(v.Proto.GetTarget()); err != nil {
+			return fmt.Errorf(
+				"file %s in package %s has an invalid target %s: %w",
+				v.Proto.GetPath(),
+				pkg.Proto.GetName(),
+				v.Proto.GetTarget(),
+				err,
+			)
 		}
 	}
 

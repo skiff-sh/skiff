@@ -8,13 +8,14 @@ import (
 	"path/filepath"
 
 	"github.com/skiff-sh/config/ptr"
+	"github.com/urfave/cli/v3"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/fileutil"
 	"github.com/skiff-sh/skiff/pkg/interact"
 	"github.com/skiff-sh/skiff/pkg/protoencode"
 	"github.com/skiff-sh/skiff/pkg/registry"
-	"github.com/urfave/cli/v3"
-	"google.golang.org/protobuf/proto"
 )
 
 var BuildFlagOutputDirectory = &cli.StringFlag{
@@ -29,11 +30,11 @@ var BuildArgRegistryPath = &cli.StringArg{
 	UsageText: "registry file path",
 }
 
-func NewBuildAction() *BuildCommandAction {
-	return &BuildCommandAction{}
+type BuildCommandAction struct {
 }
 
-type BuildCommandAction struct {
+func NewBuildAction() *BuildCommandAction {
+	return &BuildCommandAction{}
 }
 
 type BuildArgs struct {
@@ -64,22 +65,22 @@ func (b *BuildCommandAction) Act(_ context.Context, args *BuildArgs) error {
 		return fmt.Errorf("failed to load registry at %s: %w", args.RegistryPath, err)
 	}
 
-	for _, v := range reg.Packages {
-		targetPath := filepath.Join(args.OutputDirectory, v.Name+".json")
+	for _, v := range reg.GetPackages() {
+		targetPath := filepath.Join(args.OutputDirectory, v.GetName()+".json")
 		interact.Infof("Writing file %s", targetPath)
 		pkg, err := HydratePackage(v, regFS)
 		if err != nil {
-			return fmt.Errorf("package %s: %w", v.Name, err)
+			return fmt.Errorf("package %s: %w", v.GetName(), err)
 		}
 
 		err = WritePackage(pkg, targetPath)
 		if err != nil {
-			return fmt.Errorf("package %s: %w", v.Name, err)
+			return fmt.Errorf("package %s: %w", v.GetName(), err)
 		}
 	}
 
-	for _, v := range reg.Packages {
-		for _, fi := range v.Files {
+	for _, v := range reg.GetPackages() {
+		for _, fi := range v.GetFiles() {
 			// zero out content so it's not included in the registry catalog.
 			fi.Content = nil
 		}
@@ -101,16 +102,16 @@ func (b *BuildCommandAction) Act(_ context.Context, args *BuildArgs) error {
 
 func HydratePackage(pkg *v1alpha1.Package, registryRoot fs.FS) (*v1alpha1.Package, error) {
 	out := proto.CloneOf(pkg)
-	for _, v := range out.Files {
-		if v.Content != nil && len(v.Raw) == 0 {
+	for _, v := range out.GetFiles() {
+		if v.Content != nil && len(v.GetRaw()) == 0 {
 			continue
 		}
-		content, err := fs.ReadFile(registryRoot, v.Path)
+		content, err := fs.ReadFile(registryRoot, v.GetPath())
 		if err != nil {
-			return nil, fmt.Errorf("failed to read file %s: %w", v.Path, err)
+			return nil, fmt.Errorf("failed to read file %s: %w", v.GetPath(), err)
 		}
 
-		if v.Type == v1alpha1.File_plugin {
+		if v.GetType() == v1alpha1.File_plugin {
 			v.Raw = content
 		} else {
 			v.Content = ptr.Ptr(string(content))

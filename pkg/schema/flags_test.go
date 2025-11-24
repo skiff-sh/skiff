@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	"github.com/skiff-sh/config/ptr"
-	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
-	"github.com/skiff-sh/skiff/pkg/fields"
 	"github.com/stretchr/testify/suite"
 	"github.com/urfave/cli/v3"
+
+	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
+	"github.com/skiff-sh/skiff/pkg/fields"
 )
 
 type FlagsTestSuite struct {
@@ -63,7 +64,10 @@ func (f *FlagsTestSuite) TestFieldToCLIFlag() {
 				},
 			},
 			ExpectedFunc: func(v *Flag) {
-				f.ErrorContains(v.Flag.(*cli.Float64SliceFlag).Action(f.T().Context(), nil, []float64{4, 5}), "expected one of 1, 2, 3")
+				f.ErrorContains(
+					v.Flag.(*cli.Float64SliceFlag).Action(f.T().Context(), nil, []float64{4, 5}),
+					"expected one of 1, 2, 3",
+				)
 			},
 		},
 		"number enum invalid": {
@@ -128,7 +132,10 @@ func (f *FlagsTestSuite) TestFieldToCLIFlag() {
 				},
 			},
 			ExpectedFunc: func(v *Flag) {
-				f.ErrorContains(v.Flag.(*cli.StringSliceFlag).Action(f.T().Context(), nil, []string{"d"}), "expected one of a, b, c")
+				f.ErrorContains(
+					v.Flag.(*cli.StringSliceFlag).Action(f.T().Context(), nil, []string{"d"}),
+					"expected one of a, b, c",
+				)
 			},
 		},
 		"bool": {

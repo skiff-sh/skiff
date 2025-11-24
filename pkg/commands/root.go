@@ -3,15 +3,20 @@ package commands
 import (
 	"context"
 	"errors"
-	"flag"
 	"io"
 	"os"
 	"slices"
 	"strings"
 
-	"github.com/skiff-sh/skiff/pkg/filesystem"
 	"github.com/urfave/cli/v3"
+
+	"github.com/skiff-sh/skiff/pkg/filesystem"
 )
+
+type RootCommand struct {
+	ProjectRoot string
+	CLI         *cli.Command
+}
 
 func NewCommand(projectRoot string) *RootCommand {
 	cli.RootCommandHelpTemplate = `Name:
@@ -125,11 +130,6 @@ Global options:{{template "visiblePersistentFlagTemplate" .}}{{end}}
 	}
 }
 
-type RootCommand struct {
-	ProjectRoot string
-	CLI         *cli.Command
-}
-
 func (r *RootCommand) Run(ctx context.Context, args []string) error {
 	addCmd, err := newAddCmd(ctx, args)
 	if err != nil {
@@ -153,52 +153,57 @@ func newAddCmd(ctx context.Context, args []string) (*cli.Command, error) {
 		Arguments: []cli.Argument{
 			AddArgPackages,
 		},
+		Action: func(_ context.Context, _ *cli.Command) error {
+			return nil
+		},
 	}
 
 	cmdArgs := filterFlagsFromArgs(args, addCmd.Flags)
 	isAddCmd := false
+	//nolint:mnd // not magic
 	if len(cmdArgs) > 2 {
 		isAddCmd = cmdArgs[1] == "add"
 	}
 
-	if isAddCmd {
-		// Did the user specify an arg.
-		if len(cmdArgs) >= 3 {
-			pkgs, err := LoadPackages(ctx, cmdArgs[2:])
-			if err != nil {
-				return nil, err
-			}
+	if !isAddCmd {
+		return addCmd, nil
+	}
 
-			flags, err := FlagsFromPackages(argsHaveBoolFlag(cmdArgs, AddFlagNonInteractive), pkgs)
-			if err != nil {
-				return nil, err
-			}
+	// Did the user specify an arg.
+	//nolint:mnd // not magic
+	if len(cmdArgs) < 3 {
+		return addCmd, nil
+	}
 
-			act := NewAddAction(flags, pkgs)
-			flatFlags := make([]cli.Flag, 0, len(act.PackageFlags))
-			for _, pkgFlags := range flags {
-				for i := range pkgFlags {
-					flatFlags = append(flatFlags, pkgFlags[i].Flag)
-				}
-			}
-			addCmd.Flags = append(addCmd.Flags, flatFlags...)
-			addCmd.Action = func(ctx context.Context, command *cli.Command) error {
-				root := command.String(AddFlagRoot.Name)
-				if root == "" {
-					root, err = os.Getwd()
-					if err != nil {
-						return err
-					}
-				}
-				return act.Act(ctx, &AddArgs{
-					ProjectRoot: filesystem.New(root),
-				})
-			}
-		} else {
-			addCmd.Action = func(ctx context.Context, command *cli.Command) error {
-				return nil
+	pkgs, err := LoadPackages(ctx, cmdArgs[2:])
+	if err != nil {
+		return nil, err
+	}
+
+	flags, err := FlagsFromPackages(argsHaveBoolFlag(cmdArgs, AddFlagNonInteractive), pkgs)
+	if err != nil {
+		return nil, err
+	}
+
+	act := NewAddAction(flags, pkgs)
+	flatFlags := make([]cli.Flag, 0, len(act.PackageFlags))
+	for _, pkgFlags := range flags {
+		for i := range pkgFlags {
+			flatFlags = append(flatFlags, pkgFlags[i].Flag)
+		}
+	}
+	addCmd.Flags = append(addCmd.Flags, flatFlags...)
+	addCmd.Action = func(ctx context.Context, command *cli.Command) error {
+		root := command.String(AddFlagRoot.Name)
+		if root == "" {
+			root, err = os.Getwd()
+			if err != nil {
+				return err
 			}
 		}
+		return act.Act(ctx, &AddArgs{
+			ProjectRoot: filesystem.New(root),
+		})
 	}
 	return addCmd, nil
 }
@@ -230,12 +235,6 @@ func filterFlagsFromArgs(s []string, possibleFlags []cli.Flag) []string {
 	}
 
 	return out
-}
-
-func parseFlags(args []string) *flag.FlagSet {
-	set := flag.NewFlagSet("skiff", flag.ContinueOnError)
-	_ = set.Parse(args)
-	return set
 }
 
 func argsHaveBoolFlag(args []string, fl cli.Flag) bool {

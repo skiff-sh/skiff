@@ -4,10 +4,16 @@ import (
 	"errors"
 	"fmt"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/fields"
-	"google.golang.org/protobuf/types/known/structpb"
 )
+
+type Schema struct {
+	Proto  *v1alpha1.Schema
+	Fields []*Field
+}
 
 func NewSchema(sch *v1alpha1.Schema) (*Schema, error) {
 	out := &Schema{
@@ -18,12 +24,12 @@ func NewSchema(sch *v1alpha1.Schema) (*Schema, error) {
 	for _, field := range sch.GetFields() {
 		f, err := NewField(field)
 		if err != nil {
-			return nil, fmt.Errorf("field '%s': %w", field.Name, err)
+			return nil, fmt.Errorf("field '%s': %w", field.GetName(), err)
 		}
 
 		f.Default, err = getDefault(field)
 		if err != nil {
-			return nil, fmt.Errorf("field '%s': %w", field.Name, err)
+			return nil, fmt.Errorf("field '%s': %w", field.GetName(), err)
 		}
 
 		var enums []*structpb.Value
@@ -41,7 +47,7 @@ func NewSchema(sch *v1alpha1.Schema) (*Schema, error) {
 			for i, v := range enums {
 				val, err := primitiveAs(v, expectedType)
 				if err != nil {
-					return nil, fmt.Errorf("field '%s': enum value %v (#%d): %w", field.Name, v, i, err)
+					return nil, fmt.Errorf("field '%s': enum value %v (#%d): %w", field.GetName(), v, i, err)
 				}
 
 				f.Enum = append(f.Enum, val)
@@ -54,21 +60,6 @@ func NewSchema(sch *v1alpha1.Schema) (*Schema, error) {
 	return out, nil
 }
 
-func NewField(p *v1alpha1.Field) (*Field, error) {
-	out := &Field{
-		Proto:   p,
-		Default: p.Default.AsInterface(),
-		Enum:    p.Enum.AsSlice(),
-	}
-
-	return out, nil
-}
-
-type Schema struct {
-	Proto  *v1alpha1.Schema
-	Fields []*Field
-}
-
 type Field struct {
 	Proto *v1alpha1.Field
 	// Set if the default field is present.
@@ -77,21 +68,31 @@ type Field struct {
 	Enum []any
 }
 
+func NewField(p *v1alpha1.Field) (*Field, error) {
+	out := &Field{
+		Proto:   p,
+		Default: p.GetDefault().AsInterface(),
+		Enum:    p.GetEnum().AsSlice(),
+	}
+
+	return out, nil
+}
+
 func getDefault(p *v1alpha1.Field) (any, error) {
-	if p.Default == nil {
+	if p.GetDefault() == nil {
 		return nil, nil
 	}
 	switch p.GetType() {
 	case v1alpha1.Field_string, v1alpha1.Field_number, v1alpha1.Field_bool:
-		v, err := primitiveAs(p.Default, p.GetType())
+		v, err := primitiveAs(p.GetDefault(), p.GetType())
 		if err != nil {
 			return nil, fmt.Errorf("'default' value: %w", err)
 		}
 		return v, nil
 	case v1alpha1.Field_array:
-		listVal := p.Default.GetListValue()
+		listVal := p.GetDefault().GetListValue()
 		if listVal == nil {
-			return nil, fmt.Errorf("expected 'default' to be array got %T", p.Default.AsInterface())
+			return nil, fmt.Errorf("expected 'default' to be array got %T", p.GetDefault().AsInterface())
 		}
 		vals := listVal.GetValues()
 		raw := make([]any, 0, len(vals))
@@ -109,6 +110,7 @@ func getDefault(p *v1alpha1.Field) (any, error) {
 
 func primitiveAs(val *structpb.Value, typ v1alpha1.Field_Type) (any, error) {
 	i := val.AsInterface()
+	//nolint:exhaustive // can only be a primitive.
 	switch typ {
 	case v1alpha1.Field_string:
 		v, ok := fields.As[string](i)

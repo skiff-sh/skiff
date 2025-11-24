@@ -10,14 +10,15 @@ import (
 	"testing/fstest"
 
 	"github.com/skiff-sh/config/ptr"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/filesystem"
 	"github.com/skiff-sh/skiff/pkg/mocks/registrymocks"
 	"github.com/skiff-sh/skiff/pkg/protoencode"
 	"github.com/skiff-sh/skiff/pkg/testutil"
 	"github.com/skiff-sh/skiff/pkg/tmpl"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/suite"
 )
 
 type RegistryTestSuite struct {
@@ -59,7 +60,9 @@ func (r *RegistryTestSuite) TestFileLoader() {
 						Content: ptr.Ptr(`derp {{.field}}`),
 					},
 				},
-				Schema: &v1alpha1.Schema{Fields: []*v1alpha1.Field{{Name: "field", Type: ptr.Ptr(v1alpha1.Field_string)}}},
+				Schema: &v1alpha1.Schema{
+					Fields: []*v1alpha1.Field{{Name: "field", Type: ptr.Ptr(v1alpha1.Field_string)}},
+				},
 			},
 		},
 	}
@@ -115,11 +118,11 @@ func (r *RegistryTestSuite) TestHTTPLoader() {
 				cl := new(registrymocks.HTTPClient)
 				cl.EXPECT().Do(mock.MatchedBy(func(req *http.Request) bool {
 					return req.URL.String() == "package.com"
-				})).Return(&http.Response{Body: io.NopCloser(bytes.NewBuffer([]byte(`{"name": "package"}`)))}, nil)
+				})).Return(&http.Response{Body: io.NopCloser(bytes.NewBufferString(`{"name": "package"}`))}, nil)
 
 				cl.EXPECT().Do(mock.MatchedBy(func(req *http.Request) bool {
 					return req.URL.String() == "registry.com"
-				})).Return(&http.Response{Body: io.NopCloser(bytes.NewBuffer([]byte(`{"name": "registry"}`)))}, nil)
+				})).Return(&http.Response{Body: io.NopCloser(bytes.NewBufferString(`{"name": "registry"}`))}, nil)
 				return NewHTTPLoader(tmpl.NewGoFactory(), cl)
 			},
 			ExpectedPackage:  &v1alpha1.Package{Name: "package"},

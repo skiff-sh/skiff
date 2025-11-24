@@ -6,10 +6,11 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/urfave/cli/v3"
+
 	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/collection"
 	"github.com/skiff-sh/skiff/pkg/fields"
-	"github.com/urfave/cli/v3"
 )
 
 var _ Entry = (*Flag)(nil)
@@ -22,7 +23,7 @@ type Flag struct {
 }
 
 func (f *Flag) FieldName() string {
-	return f.Field.Proto.Name
+	return f.Field.Proto.GetName()
 }
 
 func (f *Flag) Value() Value {
@@ -75,16 +76,21 @@ func FieldToCLIFlag(f *Field) *Flag {
 	case v1alpha1.Field_string:
 		enumVals := collection.Map(f.Enum, fields.Cast[string])
 		out := &cli.StringFlag{
-			Name:  f.Proto.Name,
+			Name:  f.Proto.GetName(),
 			Usage: f.Proto.GetDescription(),
 			Value: fields.Cast[string](f.Default),
 		}
 
 		if len(enumVals) > 0 {
-			out.Action = func(ctx context.Context, command *cli.Command, val string) error {
+			out.Action = func(_ context.Context, _ *cli.Command, val string) error {
 				idx := slices.Index(enumVals, val)
 				if idx < 0 {
-					return fmt.Errorf("%s cannot be '%s': expected one of %s", f.Proto.Name, val, strings.Join(enumVals, ", "))
+					return fmt.Errorf(
+						"%s cannot be '%s': expected one of %s",
+						f.Proto.GetName(),
+						val,
+						strings.Join(enumVals, ", "),
+					)
 				}
 				return nil
 			}
@@ -94,16 +100,21 @@ func FieldToCLIFlag(f *Field) *Flag {
 	case v1alpha1.Field_number:
 		enumVals := collection.Map(f.Enum, fields.Cast[float64])
 		out := &cli.Float64Flag{
-			Name:  f.Proto.Name,
+			Name:  f.Proto.GetName(),
 			Usage: f.Proto.GetDescription(),
 			Value: fields.Cast[float64](f.Default),
 		}
 
 		if len(enumVals) > 0 {
-			out.Action = func(ctx context.Context, command *cli.Command, val float64) error {
+			out.Action = func(_ context.Context, _ *cli.Command, val float64) error {
 				idx := slices.Index(enumVals, val)
 				if idx < 0 {
-					return fmt.Errorf("%s cannot be '%v': expected one of %s", f.Proto.Name, val, strings.Join(collection.Map(enumVals, fields.FormatFloat), ", "))
+					return fmt.Errorf(
+						"%s cannot be '%v': expected one of %s",
+						f.Proto.GetName(),
+						val,
+						strings.Join(collection.Map(enumVals, fields.FormatFloat), ", "),
+					)
 				}
 				return nil
 			}
@@ -112,27 +123,33 @@ func FieldToCLIFlag(f *Field) *Flag {
 		return &Flag{Field: f, Flag: out, Accessor: newFlagAccessor(out)}
 	case v1alpha1.Field_bool:
 		out := &cli.BoolFlag{
-			Name:  f.Proto.Name,
+			Name:  f.Proto.GetName(),
 			Usage: f.Proto.GetDescription(),
 			Value: fields.Cast[bool](f.Default),
 		}
 		return &Flag{Field: f, Flag: out, Accessor: newFlagAccessor(out)}
 	case v1alpha1.Field_array:
+		//nolint:exhaustive // can only be a subset.
 		switch f.Proto.GetItems().GetType() {
 		case v1alpha1.Field_string:
 			enumVals := collection.Map(f.Enum, fields.Cast[string])
 			out := &cli.StringSliceFlag{
-				Name:  f.Proto.Name,
+				Name:  f.Proto.GetName(),
 				Usage: f.Proto.GetDescription(),
 				Value: collection.Map(fields.Cast[[]any](f.Default), fields.Cast[string]),
 			}
 
 			if len(enumVals) > 0 {
-				out.Action = func(ctx context.Context, command *cli.Command, val []string) error {
+				out.Action = func(_ context.Context, _ *cli.Command, val []string) error {
 					for _, v := range val {
 						idx := slices.Index(enumVals, v)
 						if idx < 0 {
-							return fmt.Errorf("%s cannot be %s: expected one of %s", f.Proto.Name, v, strings.Join(enumVals, ", "))
+							return fmt.Errorf(
+								"%s cannot be %s: expected one of %s",
+								f.Proto.GetName(),
+								v,
+								strings.Join(enumVals, ", "),
+							)
 						}
 					}
 					return nil
@@ -142,17 +159,22 @@ func FieldToCLIFlag(f *Field) *Flag {
 		case v1alpha1.Field_number:
 			enumVals := collection.Map(f.Enum, fields.Cast[float64])
 			out := &cli.Float64SliceFlag{
-				Name:  f.Proto.Name,
+				Name:  f.Proto.GetName(),
 				Usage: f.Proto.GetDescription(),
 				Value: collection.Map(fields.Cast[[]any](f.Default), fields.Cast[float64]),
 			}
 
 			if len(enumVals) > 0 {
-				out.Action = func(ctx context.Context, command *cli.Command, val []float64) error {
+				out.Action = func(_ context.Context, _ *cli.Command, val []float64) error {
 					for _, v := range val {
 						idx := slices.Index(enumVals, v)
 						if idx < 0 {
-							return fmt.Errorf("%s cannot be %v: expected one of %s", f.Proto.Name, v, strings.Join(collection.Map(enumVals, fields.FormatFloat), ", "))
+							return fmt.Errorf(
+								"%s cannot be %v: expected one of %s",
+								f.Proto.GetName(),
+								v,
+								strings.Join(collection.Map(enumVals, fields.FormatFloat), ", "),
+							)
 						}
 					}
 					return nil
@@ -163,8 +185,4 @@ func FieldToCLIFlag(f *Field) *Flag {
 		}
 	}
 	return nil
-}
-
-func ToCLIFlag(f *Flag) cli.Flag {
-	return f.Flag
 }

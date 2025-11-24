@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	skiffconfig "github.com/skiff-sh/config"
+
 	"github.com/skiff-sh/skiff/cmd/config"
 	"github.com/skiff-sh/skiff/pkg/commands"
 )

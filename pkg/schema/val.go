@@ -31,8 +31,8 @@ type ValueType interface {
 
 func NewValidatedValFromField(val any, f *v1alpha1.Field) Value {
 	var items *v1alpha1.Field_Type
-	if f.Items != nil {
-		items = f.Items.Type
+	if f.GetItems() != nil {
+		items = f.GetItems().Type
 	}
 	return NewValidatedVal(val, f.GetType(), items)
 }

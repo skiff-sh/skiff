@@ -14,13 +14,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/x/exp/teatest"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/collection"
 	"github.com/skiff-sh/skiff/pkg/fileutil"
 	"github.com/skiff-sh/skiff/pkg/interact"
 	"github.com/skiff-sh/skiff/pkg/protoencode"
 	"github.com/skiff-sh/skiff/pkg/testutil"
-	"github.com/stretchr/testify/suite"
 )
 
 type CliTestSuite struct {
@@ -116,8 +117,8 @@ func (c *CliTestSuite) TestBuild() {
 
 				// Check that the contents are the same as the original.
 				for _, pkg := range p.Actual.Packages {
-					for _, fi := range pkg.Files {
-						c.Equal(string(p.ExampleFS[filepath.Join(".skiff", fi.Path)].Data), fi.GetContent())
+					for _, fi := range pkg.GetFiles() {
+						c.Equal(string(p.ExampleFS[filepath.Join(".skiff", fi.GetPath())].Data), fi.GetContent())
 					}
 				}
 			},
@@ -218,11 +219,17 @@ func (c *CliTestSuite) TestAdd() {
 
 			var mod *teatest.TestModel
 			var form *huh.Form
-			interact.FormRunner = func(ctx context.Context, f *huh.Form) error {
+			interact.FormRunner = func(_ context.Context, f *huh.Form) error {
 				form = f
-				mod = teatest.NewTestModel(c.T(), testutil.NewFormTest(f))
+				mod = teatest.NewTestModel(c.T(), f)
 				v.Inputs.SendTo(mod, 50*time.Millisecond)
-				teatest.WaitFor(c.T(), mod.Output(), testutil.WaitFormDone(form), teatest.WithCheckInterval(10*time.Millisecond), teatest.WithDuration(1000*time.Millisecond))
+				teatest.WaitFor(
+					c.T(),
+					mod.Output(),
+					testutil.WaitFormDone(form),
+					teatest.WithCheckInterval(10*time.Millisecond),
+					teatest.WithDuration(1000*time.Millisecond),
+				)
 				return nil
 			}
 
@@ -259,7 +266,13 @@ func (c *CliTestSuite) buildExample(exaDir string, args ...string) (*BuildCmdOut
 	cmd.Command.CLI.Writer = buf
 	outputDir := filepath.Join(exaDir, "public", "r")
 
-	err = cmd.Command.Run(ctx, slices.Concat([]string{"skiff", "build", filepath.Join(exaDir, ".skiff", "registry.json")}, slices.Concat(args, []string{"-o", outputDir})))
+	err = cmd.Command.Run(
+		ctx,
+		slices.Concat(
+			[]string{"skiff", "build", filepath.Join(exaDir, ".skiff", "registry.json")},
+			slices.Concat(args, []string{"-o", outputDir}),
+		),
+	)
 	if !c.NoError(err) {
 		return nil, false
 	}

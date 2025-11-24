@@ -3,9 +3,10 @@ package plugin
 import (
 	"testing"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/skiff-sh/skiff/api/go/skiff/plugin/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/fileutil"
-	"github.com/stretchr/testify/suite"
 )
 
 type YaegiTestSuite struct {
@@ -40,7 +41,7 @@ func WriteFile(ctx context.Context, req *v1alpha1.WriteFileRequest) (*v1alpha1.W
 		return
 	}
 
-	y.Equal("hi", string(resp.Contents))
+	y.Equal("hi", string(resp.GetContents()))
 }
 
 func TestYaegiTestSuite(t *testing.T) {
