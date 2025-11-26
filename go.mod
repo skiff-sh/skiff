@@ -1,6 +1,6 @@
 module github.com/skiff-sh/skiff
 
-go 1.25.3
+go 1.25.4
 
 require (
 	buf.build/go/protovalidate v1.0.1
@@ -10,9 +10,11 @@ require (
 	github.com/charmbracelet/x/exp/teatest v0.0.0-20251118172736-77d017256798
 	github.com/charmbracelet/x/term v0.2.2
 	github.com/google/go-cmp v0.7.0
+	github.com/skiff-sh/api/go v0.0.0-20251125000145-f6e1d88b9355
 	github.com/skiff-sh/config v0.0.0-20250921220812-93e59348136e
-	github.com/skiff-sh/skiff/api/go v0.0.0-20251124224920-1168d4d63dc6
+	github.com/skiff-sh/sdk-go v0.0.0-20251126231338-f822f5afbaa2
 	github.com/stretchr/testify v1.11.1
+	github.com/tetratelabs/wazero v1.10.1
 	github.com/traefik/yaegi v0.16.2-0.20250521203204-d93266d013f3
 	github.com/urfave/cli/v3 v3.6.1
 	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6
@@ -63,6 +65,7 @@ require (
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/skiff-sh/skiff/api/go v0.0.0-20251124224920-1168d4d63dc6 // indirect
 	github.com/stoewer/go-strcase v1.3.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect

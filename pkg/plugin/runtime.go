@@ -3,7 +3,7 @@ package plugin
 import (
 	"context"
 
-	"github.com/skiff-sh/skiff/api/go/skiff/plugin/v1alpha1"
+	"github.com/skiff-sh/api/go/skiff/plugin/v1alpha1"
 )
 
 type Interpreter interface {

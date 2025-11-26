@@ -5,7 +5,7 @@ import (
 
 	"github.com/skiff-sh/config/ptr"
 
-	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
+	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/bufferpool"
 	"github.com/skiff-sh/skiff/pkg/filesystem"
 	"github.com/skiff-sh/skiff/pkg/tmpl"

@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
+	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/collection"
 	"github.com/skiff-sh/skiff/pkg/fields"
 )

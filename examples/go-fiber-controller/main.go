@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/skiff-sh/skiff/e2e/examples/go-fiber-controller/controller"
+	"github.com/skiff-sh/skiff/examples/go-fiber-controller/controller"
 )
 
 func main() {

@@ -11,7 +11,7 @@ import (
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
+	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/fileutil"
 	"github.com/skiff-sh/skiff/pkg/interact"
 	"github.com/skiff-sh/skiff/pkg/protoencode"

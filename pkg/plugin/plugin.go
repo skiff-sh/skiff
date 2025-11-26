@@ -1,6 +1,6 @@
 package plugin
 
-type Plugin struct {
+type Instructions struct {
 	Path    string
 	Target  string
 	Content []byte

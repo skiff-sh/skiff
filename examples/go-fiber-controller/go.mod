@@ -1,6 +1,6 @@
-module github.com/skiff-sh/skiff/e2e/examples/go-fiber-controller
+module github.com/skiff-sh/skiff/examples/go-fiber-controller
 
-go 1.25.3
+go 1.25.4
 
 require github.com/gofiber/fiber/v2 v2.52.9
 

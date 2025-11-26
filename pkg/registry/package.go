@@ -3,7 +3,7 @@ package registry
 import (
 	"fmt"
 
-	"github.com/skiff-sh/skiff/api/go/skiff/registry/v1alpha1"
+	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/skiff/pkg/filesystem"
 	"github.com/skiff-sh/skiff/pkg/schema"
 	"github.com/skiff-sh/skiff/pkg/tmpl"
