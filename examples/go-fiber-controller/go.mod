@@ -2,7 +2,7 @@ module github.com/skiff-sh/skiff/examples/go-fiber-controller
 
 go 1.25.4
 
-require github.com/gofiber/fiber/v2 v2.52.9
+require github.com/gofiber/fiber/v2 v2.52.10
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect

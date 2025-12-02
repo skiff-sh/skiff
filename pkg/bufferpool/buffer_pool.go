@@ -21,3 +21,9 @@ func GetBytesBuffer() *bytes.Buffer {
 func PutBytesBuffer(buf *bytes.Buffer) {
 	bytesBufferPool.Put(buf)
 }
+
+func PutBytesBuffers(buf ...*bytes.Buffer) {
+	for i := range buf {
+		bytesBufferPool.Put(buf[i])
+	}
+}

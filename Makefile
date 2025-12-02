@@ -7,6 +7,8 @@ GOBIN ?= $$(go env GOPATH)/bin
 all:
 	cd cmd/skiff && go build -o ../../bin/skiff main.go
 
+gen: mocks testdata
+
 mocks:
 	rm -rf pkg/mocks
 	find . -type f -name 'mock_*.go' -delete
@@ -38,3 +40,7 @@ update.api:
 	cd cmd && go get github.com/skiff-sh/api/go
 	cd sdk-go && go get github.com/skiff-sh/api/go
 	cd examples/go-fiber-controller && go get github.com/skiff-sh/api/go
+
+testdata:
+	rm -f pkg/plugin/testdata/*.wasm
+	GOOS=wasip1 GOARCH=wasm go build -target=wasi -buildmode=c-shared -o pkg/plugin/testdata/basic_plugin.wasm pkg/plugin/testdata/basic_plugin.go

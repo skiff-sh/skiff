@@ -7,8 +7,7 @@ import (
 
 var _ skiff.Plugin = (*Plugin)(nil)
 
-type Plugin struct {
-}
+type Plugin struct{}
 
 func (p *Plugin) WriteFile(ctx *skiff.Context, req *v1alpha1.WriteFileRequest) (*v1alpha1.WriteFileResponse, error) {
 	return &v1alpha1.WriteFileResponse{Contents: []byte("hi")}, nil
