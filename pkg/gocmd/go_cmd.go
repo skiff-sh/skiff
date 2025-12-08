@@ -17,12 +17,11 @@ type GoCLI interface {
 }
 
 type BuildArgs struct {
-	BuildMode   BuildMode
-	BuildTarget BuildTarget
-	OutputPath  string
-	Packages    []string
-	GoOS        OS
-	GoArch      Arch
+	BuildMode  BuildMode
+	OutputPath string
+	Packages   []string
+	GoOS       OS
+	GoArch     Arch
 }
 
 type Arch string
@@ -35,12 +34,6 @@ type OS string
 
 const (
 	OSWASIP1 OS = "wasip1"
-)
-
-type BuildTarget string
-
-const (
-	BuildTargetWASI BuildTarget = "wasi"
 )
 
 type BuildMode string
@@ -116,10 +109,6 @@ func (g *goCLI) Build(ctx context.Context, build BuildArgs) error {
 	args := []string{"build"}
 	if build.BuildMode != "" {
 		args = append(args, "-buildmode="+string(build.BuildMode))
-	}
-
-	if build.BuildTarget != "" {
-		args = append(args, "-target="+string(build.BuildTarget))
 	}
 
 	if build.OutputPath != "" {

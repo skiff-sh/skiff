@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"os/exec"
+	"strings"
 
 	"github.com/skiff-sh/skiff/pkg/bufferpool"
 )
@@ -75,4 +76,14 @@ func (b *Buffers) Attach(cmd *exec.Cmd) {
 
 func (b *Buffers) Close() {
 	bufferpool.PutBytesBuffers(b.Stderr, b.Stdin, b.Stdout)
+}
+
+func EnvVarsToMap(evs []string) map[string]string {
+	out := make(map[string]string, len(evs))
+	for _, ev := range evs {
+		idx := strings.Index(ev, "=")
+		out[ev[:idx]] = ev[idx+1:]
+	}
+
+	return out
 }

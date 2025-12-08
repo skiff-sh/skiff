@@ -53,18 +53,33 @@ func (g *GoCmdTestSuite) TestVersion() {
 
 func (g *GoCmdTestSuite) TestBuild() {
 	type test struct {
-		Given        BuildArgs
-		ExpectedArgs []string
+		Given           BuildArgs
+		ExpectedArgs    []string
+		ExpectedEnvVars map[string]string
 	}
 
 	tests := map[string]test{
-		"all args": {},
+		"all args": {
+			ExpectedArgs: []string{"go", "build", "-buildmode=c-shared", "-o", "./derp.wasm", "./plugin.go"},
+			ExpectedEnvVars: map[string]string{
+				"GOOS":   "wasip1",
+				"GOARCH": "wasm",
+			},
+			Given: BuildArgs{
+				BuildMode:  BuildModeCShared,
+				OutputPath: "./derp.wasm",
+				Packages:   []string{"./plugin.go"},
+				GoOS:       OSWASIP1,
+				GoArch:     ArchWASM,
+			},
+		},
 	}
 
 	for desc, v := range tests {
 		g.Run(desc, func() {
+			var actualCmd *execcmd.Cmd
 			execcmd.DefaultRunner = execcmd.RunnerFunc(func(cmd *execcmd.Cmd) error {
-				cmd.Buffers.Stdout = bytes.NewBuffer([]byte(v.Given))
+				actualCmd = cmd
 				return nil
 			})
 
@@ -73,13 +88,15 @@ func (g *GoCmdTestSuite) TestBuild() {
 				return
 			}
 
-			ver, err := gocmd.Version(g.T().Context())
+			ctx := g.T().Context()
+			err = gocmd.Build(ctx, v.Given)
 			if !g.NoError(err) {
 				return
 			}
 
-			g.Equal(v.Expected, ver)
-		}
+			g.Equal(v.ExpectedArgs, actualCmd.Cmd.Args)
+			g.Equal(v.ExpectedEnvVars, execcmd.EnvVarsToMap(actualCmd.Cmd.Env))
+		})
 	}
 }
 

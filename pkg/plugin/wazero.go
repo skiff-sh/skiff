@@ -3,6 +3,7 @@ package plugin
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -10,11 +11,10 @@ import (
 
 	"github.com/skiff-sh/api/go/skiff/plugin/v1alpha1"
 	"github.com/skiff-sh/sdk-go/pluginapi"
-	"github.com/skiff-sh/skiff/pkg/bufferpool"
+	"github.com/skiff-sh/skiff/pkg/execcmd"
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
-	"google.golang.org/protobuf/proto"
 )
 
 type Compiler interface {
@@ -46,15 +46,15 @@ type wazeroCompiler struct {
 }
 
 func (w *wazeroCompiler) Compile(ctx context.Context, b []byte, rootFs fs.FS) (Plugin, error) {
-	stdout, stdin, stderr := bufferpool.GetBytesBuffer(), bufferpool.GetBytesBuffer(), bufferpool.GetBytesBuffer()
+	buff := execcmd.NewBuffers()
 	mounts := wazero.NewFSConfig().WithFSMount(rootFs, "root")
 	modConfig := wazero.NewModuleConfig().
 		WithFSConfig(mounts).
 		WithEnv(pluginapi.EnvVarProjectPath, "root").
 		WithEnv(pluginapi.EnvVarMessageDelimiter, "\r").
-		WithStdout(stdout).
-		WithStdin(stdin).
-		WithStderr(stderr).
+		WithStdout(buff.Stdout).
+		WithStdin(buff.Stdin).
+		WithStderr(buff.Stderr).
 		WithStartFunctions("_initialize", "_start")
 
 	mod, err := w.Runtime.InstantiateWithConfig(ctx, b, modConfig)
@@ -72,16 +72,10 @@ func (w *wazeroCompiler) Compile(ctx context.Context, b []byte, rootFs fs.FS) (P
 		return nil, fmt.Errorf("func %s must return a single int64", pluginapi.WASMFuncHandleRequestName)
 	}
 
-	if paramTypes := def.ParamTypes(); len(paramTypes) != 1 || paramTypes[0] != api.ValueTypeI64 {
-		return nil, fmt.Errorf("func %s must take a single int64", pluginapi.WASMFuncHandleRequestName)
-	}
-
 	return &wazeroPlugin{
 		Module:            mod,
+		Buffer:            buff,
 		HandleRequestFunc: handleRequestFunc,
-		StdoutBuffer:      stdout,
-		StderrBuffer:      stderr,
-		StdinBuffer:       stdin,
 		MessageDelim:      '\r',
 		ProjectFS:         rootFs,
 	}, nil
@@ -92,9 +86,7 @@ type wazeroPlugin struct {
 
 	HandleRequestFunc api.Function
 
-	StdoutBuffer *bytes.Buffer
-	StderrBuffer *bytes.Buffer
-	StdinBuffer  *bytes.Buffer
+	Buffer       *execcmd.Buffers
 	MessageDelim byte
 	ProjectFS    fs.FS
 	Closer       sync.Once
@@ -103,27 +95,26 @@ type wazeroPlugin struct {
 func (w *wazeroPlugin) Close() error {
 	var err error
 	w.Closer.Do(func() {
-		bufferpool.PutBytesBuffer(w.StdinBuffer)
-		bufferpool.PutBytesBuffer(w.StdoutBuffer)
-		bufferpool.PutBytesBuffer(w.StderrBuffer)
+		w.Buffer.Close()
 		err = w.Module.Close(context.Background())
 	})
 	return err
 }
 
 func (w *wazeroPlugin) WriteFile(ctx context.Context, req *v1alpha1.WriteFileRequest) (*v1alpha1.WriteFileResponse, error) {
-	b, err := proto.Marshal(req)
+	r := &v1alpha1.Request{WriteFile: req}
+	b, err := json.Marshal(r)
 	if err != nil {
 		return nil, err
 	}
 	b = append(b, w.MessageDelim)
 
-	_, err = w.StdinBuffer.Write(b)
+	_, err = w.Buffer.Stdin.Write(b)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := w.HandleRequestFunc.Call(ctx, uint64(pluginapi.RequestTypeWriteFile))
+	res, err := w.HandleRequestFunc.Call(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -132,29 +123,34 @@ func (w *wazeroPlugin) WriteFile(ctx context.Context, req *v1alpha1.WriteFileReq
 		return nil, errors.New(code.String())
 	}
 
-	raw, err := w.StdoutBuffer.ReadBytes(w.MessageDelim)
+	raw, err := w.Buffer.Stdout.ReadBytes(w.MessageDelim)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := new(v1alpha1.WriteFileResponse)
 	if len(raw) == 0 {
-		return resp, nil
+		return nil, nil
 	}
+
+	resp := new(v1alpha1.Response)
 	// Drop delimiter
 	raw = raw[:len(raw)-1]
-	err = proto.Unmarshal(raw, resp)
-	return resp, err
+	err = json.Unmarshal(raw, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.WriteFile, err
 }
 
 func (w *wazeroPlugin) Stdout() *bytes.Buffer {
-	return w.StdoutBuffer
+	return w.Buffer.Stdout
 }
 
 func (w *wazeroPlugin) Stderr() *bytes.Buffer {
-	return w.StderrBuffer
+	return w.Buffer.Stderr
 }
 
 func (w *wazeroPlugin) Stdin() *bytes.Buffer {
-	return w.StdinBuffer
+	return w.Buffer.Stdin
 }

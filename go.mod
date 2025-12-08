@@ -12,9 +12,11 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/skiff-sh/api/go v0.0.0-20251125000145-f6e1d88b9355
 	github.com/skiff-sh/config v0.0.0-20250921220812-93e59348136e
-	github.com/skiff-sh/sdk-go v0.0.0-20251126231338-f822f5afbaa2
+	github.com/skiff-sh/sdk-go v0.0.0-20251202173838-ab70d40f82a8
+	github.com/skiff-sh/skiff/sdk-go v0.0.0-20251124231618-b96d93674616
 	github.com/stretchr/testify v1.11.1
 	github.com/tetratelabs/wazero v1.10.1
+	github.com/traefik/yaegi v0.16.1
 	github.com/urfave/cli/v3 v3.6.1
 	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6
 	golang.org/x/text v0.31.0
@@ -44,7 +46,6 @@ require (
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
-	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/google/cel-go v0.26.1 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/parsers/json v1.0.0 // indirect
@@ -65,6 +66,7 @@ require (
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/skiff-sh/skiff/api/go v0.0.0-20251124224920-1168d4d63dc6 // indirect
 	github.com/stoewer/go-strcase v1.3.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect

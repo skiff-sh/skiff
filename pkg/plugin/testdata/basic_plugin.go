@@ -1,8 +1,7 @@
 package main
 
 import (
-	"encoding/json"
-
+	"github.com/skiff-sh/api/go/skiff/plugin/v1alpha1"
 	"github.com/skiff-sh/sdk-go/skiff"
 )
 
@@ -15,11 +14,8 @@ type req struct {
 	Target string
 }
 
-func (p *Plugin) WriteFile(ctx *skiff.Context) error {
-	req := new(req)
-
-	_, _ = json.Marshal(req)
-	return nil
+func (p *Plugin) WriteFile(_ *skiff.Context, _ *v1alpha1.WriteFileRequest) (*v1alpha1.WriteFileResponse, error) {
+	return &v1alpha1.WriteFileResponse{Contents: []byte("hi")}, nil
 }
 
 func init() {
@@ -27,4 +23,5 @@ func init() {
 }
 
 func main() {
+	skiff.Register(new(Plugin))
 }

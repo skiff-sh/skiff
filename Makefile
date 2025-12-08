@@ -43,4 +43,4 @@ update.api:
 
 testdata:
 	rm -f pkg/plugin/testdata/*.wasm
-	GOOS=wasip1 GOARCH=wasm go build -target=wasi -buildmode=c-shared -o pkg/plugin/testdata/basic_plugin.wasm pkg/plugin/testdata/basic_plugin.go
+	GOOS=wasip1 GOARCH=wasm go build -buildmode=c-shared -o pkg/plugin/testdata/basic_plugin.wasm pkg/plugin/testdata/basic_plugin.go

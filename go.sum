@@ -69,8 +69,6 @@ github.com/fsnotify/fsnotify v1.9.0 h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S
 github.com/fsnotify/fsnotify v1.9.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
 github.com/go-viper/mapstructure/v2 v2.4.0 h1:EBsztssimR/CONLSZZ04E8qAkxNYq4Qp9LvH92wZUgs=
 github.com/go-viper/mapstructure/v2 v2.4.0/go.mod h1:oJDH3BJKyqBA2TXFhDsKDGDTlndYOZ6rGS0BRZIxGhM=
-github.com/goccy/go-json v0.10.5 h1:Fq85nIqj+gXn/S5ahsiTlK3TmC85qgirsdTP/+DeaC4=
-github.com/goccy/go-json v0.10.5/go.mod h1:oq7eo15ShAhp70Anwd5lgX2pLfOS3QCiwU/PULtXL6M=
 github.com/google/cel-go v0.26.1 h1:iPbVVEdkhTX++hpe3lzSk7D3G3QSYqLGoHOcEio+UXQ=
 github.com/google/cel-go v0.26.1/go.mod h1:A9O8OU9rdvrK5MQyrqfIxo1a0u4g3sF8KB6PUIaryMM=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
@@ -123,8 +121,12 @@ github.com/skiff-sh/api/go v0.0.0-20251125000145-f6e1d88b9355 h1:8d7oqAPs5AoxWns
 github.com/skiff-sh/api/go v0.0.0-20251125000145-f6e1d88b9355/go.mod h1:BmmyarVPe5+g2YL40UtT104v08yCyoE0JDaxpPqK+sE=
 github.com/skiff-sh/config v0.0.0-20250921220812-93e59348136e h1:08WdkwJndYkTiKFd9USQId6SV0z3yPoIALy28mcP+Wo=
 github.com/skiff-sh/config v0.0.0-20250921220812-93e59348136e/go.mod h1:wyev5UmLf9Tps6F4uWB0TPxZO4jxN3NRGFRdo7GaSdc=
-github.com/skiff-sh/sdk-go v0.0.0-20251126231338-f822f5afbaa2 h1:T2lYIW2yf4nNlzka7exCqwhWOoOyGmtHkY/8yOIq0gU=
-github.com/skiff-sh/sdk-go v0.0.0-20251126231338-f822f5afbaa2/go.mod h1:M2cMUXg3HOOr7hspnOGu9qe/mBrUdGNEa8zKbY2Non8=
+github.com/skiff-sh/sdk-go v0.0.0-20251202173838-ab70d40f82a8 h1:2K3qyaMRIo7RTKDaMB1ZTn62ObHPqdvWXBxFTll5Ewk=
+github.com/skiff-sh/sdk-go v0.0.0-20251202173838-ab70d40f82a8/go.mod h1:M2cMUXg3HOOr7hspnOGu9qe/mBrUdGNEa8zKbY2Non8=
+github.com/skiff-sh/skiff/api/go v0.0.0-20251124224920-1168d4d63dc6 h1:lrRSqtKcCkSbxDJ+OXE/8syouA15Kr35jBU2m3ABwBQ=
+github.com/skiff-sh/skiff/api/go v0.0.0-20251124224920-1168d4d63dc6/go.mod h1:8udSeJq1KuANWcfxb5LryQHUgag3t0mCCKXWouijnDg=
+github.com/skiff-sh/skiff/sdk-go v0.0.0-20251124231618-b96d93674616 h1:zc3chXvuLIyN02qhtVCkRUmo4HjTA1CnI1V5L/WBV2A=
+github.com/skiff-sh/skiff/sdk-go v0.0.0-20251124231618-b96d93674616/go.mod h1:TJNokC1a0AeBMfdfZnN5kFP0LiFGmCu1lNZenwk8B8g=
 github.com/stoewer/go-strcase v1.3.1 h1:iS0MdW+kVTxgMoE1LAZyMiYJFKlOzLooE4MxjirtkAs=
 github.com/stoewer/go-strcase v1.3.1/go.mod h1:fAH5hQ5pehh+j3nZfvwdk2RgEgQjAoM8wodgtPmh1xo=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
@@ -139,6 +141,8 @@ github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 github.com/tetratelabs/wazero v1.10.1 h1:2DugeJf6VVk58KTPszlNfeeN8AhhpwcZqkJj2wwFuH8=
 github.com/tetratelabs/wazero v1.10.1/go.mod h1:DRm5twOQ5Gr1AoEdSi0CLjDQF1J9ZAuyqFIjl1KKfQU=
+github.com/traefik/yaegi v0.16.1 h1:f1De3DVJqIDKmnasUF6MwmWv1dSEEat0wcpXhD2On3E=
+github.com/traefik/yaegi v0.16.1/go.mod h1:4eVhbPb3LnD2VigQjhYbEJ69vDRFdT2HQNrXx8eEwUY=
 github.com/urfave/cli/v3 v3.6.1 h1:j8Qq8NyUawj/7rTYdBGrxcH7A/j7/G8Q5LhWEW4G3Mo=
 github.com/urfave/cli/v3 v3.6.1/go.mod h1:ysVLtOEmg2tOy6PknnYVhDoouyC/6N42TMeoMzskhso=
 github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e h1:JVG44RsyaB9T2KIHavMF/ppJZNG9ZpyihvCd0w101no=

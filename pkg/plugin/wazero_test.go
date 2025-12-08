@@ -2,10 +2,12 @@ package plugin
 
 import (
 	"embed"
+	"fmt"
 	"io/fs"
 	"path"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/skiff-sh/api/go/skiff/plugin/v1alpha1"
 	"github.com/stretchr/testify/suite"
@@ -47,12 +49,16 @@ func (w *WazeroTestSuite) TestWriteFile() {
 				return
 			}
 
+			timer := time.Now()
 			resp, err := plug.WriteFile(ctx, &v1alpha1.WriteFileRequest{})
 			if !w.NoError(err) {
+				fmt.Println(plug.Stderr().String())
 				return
 			}
+			total := time.Since(timer)
 
-			w.Equal("hi", string(resp.GetContents()))
+			w.Less(total, 5*time.Millisecond)
+			w.Equal("hi", string(resp.Contents))
 		})
 	}
 }
