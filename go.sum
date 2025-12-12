@@ -40,8 +40,6 @@ github.com/charmbracelet/x/exp/golden v0.0.0-20251118172736-77d017256798 h1:Vmx6
 github.com/charmbracelet/x/exp/golden v0.0.0-20251118172736-77d017256798/go.mod h1:V8n/g3qVKNxr2FR37Y+otCsMySvZr601T0C7coEP0bw=
 github.com/charmbracelet/x/exp/strings v0.0.0-20251118172736-77d017256798 h1:g0RVaqkUdTikWLqrBdk2ZvJ9oTQOS0HZlYjYE8Tu7yg=
 github.com/charmbracelet/x/exp/strings v0.0.0-20251118172736-77d017256798/go.mod h1:/ehtMPNh9K4odGFkqYJKpIYyePhdp1hLBRvyY4bWkH8=
-github.com/charmbracelet/x/exp/teatest v0.0.0-20251118172736-77d017256798 h1:OY+dMNCRC5DlRRdZhEyuhbAvj3ZeqLb24ttp1AAcIdg=
-github.com/charmbracelet/x/exp/teatest v0.0.0-20251118172736-77d017256798/go.mod h1:aPVjFrBwbJgj5Qz1F0IXsnbcOVJcMKgu1ySUfTAxh7k=
 github.com/charmbracelet/x/exp/teatest v0.0.0-20251211193724-5cb91212b903 h1:8AJvgNvsBiHKO/nogxx5PDZCsL5Nvgnc1Tg5oZ3o7sc=
 github.com/charmbracelet/x/exp/teatest v0.0.0-20251211193724-5cb91212b903/go.mod h1:aPVjFrBwbJgj5Qz1F0IXsnbcOVJcMKgu1ySUfTAxh7k=
 github.com/charmbracelet/x/term v0.2.2 h1:xVRT/S2ZcKdhhOuSP4t5cLi5o+JxklsoEObBSgfgZRk=

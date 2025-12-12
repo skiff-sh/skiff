@@ -1,6 +1,6 @@
 module github.com/skiff-sh/skiff
 
-go 1.25.4
+go 1.25.5
 
 require (
 	buf.build/go/protovalidate v1.0.1
