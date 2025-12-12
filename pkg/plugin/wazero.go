@@ -10,16 +10,32 @@ import (
 	"sync"
 
 	"github.com/skiff-sh/api/go/skiff/plugin/v1alpha1"
-	"github.com/skiff-sh/sdk-go/pluginapi"
-	"github.com/skiff-sh/skiff/pkg/execcmd"
+	"github.com/skiff-sh/sdk-go/skiff/pluginapi"
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
+
+	"github.com/skiff-sh/skiff/pkg/bufferpool"
+	"github.com/skiff-sh/skiff/pkg/execcmd"
 )
 
 type Compiler interface {
-	Compile(ctx context.Context, b []byte, rootFs fs.FS) (Plugin, error)
+	Compile(ctx context.Context, b []byte, opts CompileOpts) (Plugin, error)
 }
+
+type CompileOpts struct {
+	CWDPath string
+	Mounts  []*Mount
+}
+
+type Mount struct {
+	GuestPath string
+	Dir       fs.FS
+}
+
+const (
+	guestCWDPath = "/cwd"
+)
 
 func NewWazeroCompiler() (Compiler, error) {
 	ctx := context.Background()
@@ -32,11 +48,28 @@ func NewWazeroCompiler() (Compiler, error) {
 	return &wazeroCompiler{Runtime: run, Closer: cl}, nil
 }
 
+type Response struct {
+	Body   *v1alpha1.Response
+	logs   *bytes.Buffer
+	closer sync.Once
+}
+
+func (r *Response) Logs() []byte {
+	if r == nil {
+		return nil
+	}
+	return r.logs.Bytes()
+}
+
+func (r *Response) Close() {
+	r.closer.Do(func() {
+		bufferpool.PutBytesBuffers(r.logs)
+	})
+}
+
 type Plugin interface {
-	WriteFile(ctx context.Context, req *v1alpha1.WriteFileRequest) (*v1alpha1.WriteFileResponse, error)
-	Stdout() *bytes.Buffer
-	Stderr() *bytes.Buffer
-	Stdin() *bytes.Buffer
+	// SendRequest sends a request to the plugin. Cannot be called concurrently.
+	SendRequest(ctx context.Context, req *v1alpha1.Request) (*Response, error)
 	Close() error
 }
 
@@ -45,17 +78,30 @@ type wazeroCompiler struct {
 	Closer  api.Closer
 }
 
-func (w *wazeroCompiler) Compile(ctx context.Context, b []byte, rootFs fs.FS) (Plugin, error) {
+func (w *wazeroCompiler) Compile(ctx context.Context, b []byte, opts CompileOpts) (Plugin, error) {
 	buff := execcmd.NewBuffers()
-	mounts := wazero.NewFSConfig().WithFSMount(rootFs, "root")
+
 	modConfig := wazero.NewModuleConfig().
-		WithFSConfig(mounts).
-		WithEnv(pluginapi.EnvVarProjectPath, "root").
 		WithEnv(pluginapi.EnvVarMessageDelimiter, "\r").
 		WithStdout(buff.Stdout).
 		WithStdin(buff.Stdin).
 		WithStderr(buff.Stderr).
+		WithEnv(pluginapi.EnvVarCWD, guestCWDPath).
+		WithEnv(pluginapi.EnvVarCWDHost, opts.CWDPath).
 		WithStartFunctions("_initialize", "_start")
+
+	mounts := wazero.NewFSConfig()
+	if opts.CWDPath != "" {
+		mounts = mounts.WithReadOnlyDirMount(opts.CWDPath, guestCWDPath)
+	} else {
+		mounts = mounts.WithFSMount(new(noOpFS), guestCWDPath)
+	}
+
+	for _, v := range opts.Mounts {
+		mounts = mounts.WithFSMount(v.Dir, v.GuestPath)
+	}
+
+	modConfig = modConfig.WithFSConfig(mounts)
 
 	mod, err := w.Runtime.InstantiateWithConfig(ctx, b, modConfig)
 	if err != nil {
@@ -77,7 +123,6 @@ func (w *wazeroCompiler) Compile(ctx context.Context, b []byte, rootFs fs.FS) (P
 		Buffer:            buff,
 		HandleRequestFunc: handleRequestFunc,
 		MessageDelim:      '\r',
-		ProjectFS:         rootFs,
 	}, nil
 }
 
@@ -88,7 +133,6 @@ type wazeroPlugin struct {
 
 	Buffer       *execcmd.Buffers
 	MessageDelim byte
-	ProjectFS    fs.FS
 	Closer       sync.Once
 }
 
@@ -101,14 +145,14 @@ func (w *wazeroPlugin) Close() error {
 	return err
 }
 
-func (w *wazeroPlugin) WriteFile(ctx context.Context, req *v1alpha1.WriteFileRequest) (*v1alpha1.WriteFileResponse, error) {
-	r := &v1alpha1.Request{WriteFile: req}
-	b, err := json.Marshal(r)
+func (w *wazeroPlugin) SendRequest(ctx context.Context, req *v1alpha1.Request) (*Response, error) {
+	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 	b = append(b, w.MessageDelim)
 
+	defer w.Buffer.Reset()
 	_, err = w.Buffer.Stdin.Write(b)
 	if err != nil {
 		return nil, err
@@ -129,7 +173,7 @@ func (w *wazeroPlugin) WriteFile(ctx context.Context, req *v1alpha1.WriteFileReq
 	}
 
 	if len(raw) == 0 {
-		return nil, nil
+		return nil, errors.New("plugin returned empty response")
 	}
 
 	resp := new(v1alpha1.Response)
@@ -140,17 +184,21 @@ func (w *wazeroPlugin) WriteFile(ctx context.Context, req *v1alpha1.WriteFileReq
 		return nil, err
 	}
 
-	return resp.WriteFile, err
+	out := &Response{
+		Body: resp,
+		logs: bufferpool.GetBytesBuffer(),
+	}
+
+	_, _ = out.logs.Write(w.Buffer.Stderr.Bytes())
+
+	return out, nil
 }
 
-func (w *wazeroPlugin) Stdout() *bytes.Buffer {
-	return w.Buffer.Stdout
+var _ fs.FS = (*noOpFS)(nil)
+
+type noOpFS struct {
 }
 
-func (w *wazeroPlugin) Stderr() *bytes.Buffer {
-	return w.Buffer.Stderr
-}
-
-func (w *wazeroPlugin) Stdin() *bytes.Buffer {
-	return w.Buffer.Stdin
+func (n *noOpFS) Open(_ string) (fs.File, error) {
+	return nil, fs.ErrNotExist
 }

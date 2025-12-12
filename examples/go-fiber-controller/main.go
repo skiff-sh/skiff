@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
+
 	"github.com/skiff-sh/skiff/examples/go-fiber-controller/controller"
 )
 

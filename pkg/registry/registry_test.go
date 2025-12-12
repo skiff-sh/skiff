@@ -7,18 +7,15 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"testing/fstest"
 
-	"github.com/skiff-sh/config/ptr"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
-	"github.com/skiff-sh/skiff/pkg/filesystem"
+
 	"github.com/skiff-sh/skiff/pkg/mocks/registrymocks"
 	"github.com/skiff-sh/skiff/pkg/protoencode"
 	"github.com/skiff-sh/skiff/pkg/testutil"
-	"github.com/skiff-sh/skiff/pkg/tmpl"
 )
 
 type RegistryTestSuite struct {
@@ -27,43 +24,15 @@ type RegistryTestSuite struct {
 
 func (r *RegistryTestSuite) TestFileLoader() {
 	type test struct {
-		Package             *v1alpha1.Package
-		GivenFS             fstest.MapFS
-		GivenData           map[string]any
-		GivenPath           string
-		ExpectedFunc        func(fi filesystem.Filesystem)
-		ExpectedErr         string
-		ExpectedGenerateErr string
-		ExpectedWriteToErr  string
+		GivenPackage  *v1alpha1.Package
+		GivenRegistry *v1alpha1.Registry
+		ExpectedErr   string
 	}
 
 	tests := map[string]test{
 		"file": {
-			GivenData: map[string]any{
-				"field": "hi",
-			},
-			ExpectedFunc: func(fi filesystem.Filesystem) {
-				cont, err := fi.ReadFile("derp.txt")
-				if !r.NoError(err) {
-					return
-				}
-
-				r.Equal("derp hi", string(cont))
-			},
-			Package: &v1alpha1.Package{
-				Name:        "pkg",
-				Description: "description",
-				Files: []*v1alpha1.File{
-					{
-						Target:  "derp.txt",
-						Type:    v1alpha1.File_template,
-						Content: ptr.Ptr(`derp {{.field}}`),
-					},
-				},
-				Schema: &v1alpha1.Schema{
-					Fields: []*v1alpha1.Field{{Name: "field", Type: ptr.Ptr(v1alpha1.Field_string)}},
-				},
-			},
+			GivenRegistry: &v1alpha1.Registry{Name: "registry"},
+			GivenPackage:  &v1alpha1.Package{Name: "package"},
 		},
 	}
 
@@ -73,30 +42,28 @@ func (r *RegistryTestSuite) TestFileLoader() {
 			defer func() {
 				_ = os.RemoveAll(rootDir)
 			}()
-			b, _ := protoencode.Marshaller.Marshal(v.Package)
+			b, _ := protoencode.Marshal(v.GivenPackage)
 			pkgPath := filepath.Join(rootDir, "package.json")
 			_ = os.WriteFile(pkgPath, b, 0644)
+			b, _ = protoencode.Marshal(v.GivenRegistry)
+			regPath := filepath.Join(rootDir, "registry.json")
+			_ = os.WriteFile(regPath, b, 0644)
 
-			gen, err := NewFileLoader(tmpl.NewGoFactory()).LoadPackage(r.T().Context(), pkgPath)
+			loader := NewFileLoader()
+			actualPkg, err := loader.LoadPackage(r.T().Context(), pkgPath)
 			if v.ExpectedErr != "" || !r.NoError(err) {
 				r.ErrorContains(err, v.ExpectedErr)
 				return
 			}
 
-			pkg, err := gen.Generate(v.GivenData)
-			if v.ExpectedGenerateErr != "" || !r.NoError(err) {
-				r.ErrorContains(err, v.ExpectedGenerateErr)
+			r.Empty(testutil.DiffProto(v.GivenPackage, actualPkg))
+
+			actualReg, err := loader.LoadRegistry(r.T().Context(), regPath)
+			if v.ExpectedErr != "" || !r.NoError(err) {
+				r.ErrorContains(err, v.ExpectedErr)
 				return
 			}
-
-			fs := filesystem.New(rootDir)
-			err = pkg.WriteTo(fs)
-			if v.ExpectedWriteToErr != "" || !r.NoError(err) {
-				r.ErrorContains(err, v.ExpectedWriteToErr)
-				return
-			}
-
-			v.ExpectedFunc(fs)
+			r.Empty(testutil.DiffProto(v.GivenRegistry, actualReg))
 		})
 	}
 }
@@ -123,7 +90,7 @@ func (r *RegistryTestSuite) TestHTTPLoader() {
 				cl.EXPECT().Do(mock.MatchedBy(func(req *http.Request) bool {
 					return req.URL.String() == "registry.com"
 				})).Return(&http.Response{Body: io.NopCloser(bytes.NewBufferString(`{"name": "registry"}`))}, nil)
-				return NewHTTPLoader(tmpl.NewGoFactory(), cl)
+				return NewHTTPLoader(cl)
 			},
 			ExpectedPackage:  &v1alpha1.Package{Name: "package"},
 			ExpectedRegistry: &v1alpha1.Registry{Name: "registry"},
@@ -144,7 +111,7 @@ func (r *RegistryTestSuite) TestHTTPLoader() {
 			}
 
 			r.Empty(testutil.DiffProto(v.ExpectedRegistry, reg))
-			r.Empty(testutil.DiffProto(v.ExpectedPackage, pkg.Proto))
+			r.Empty(testutil.DiffProto(v.ExpectedPackage, pkg))
 		})
 	}
 }

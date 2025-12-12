@@ -20,14 +20,34 @@ type WazeroTestSuite struct {
 //go:embed testdata/*
 var testdata embed.FS
 
-func (w *WazeroTestSuite) TestWriteFile() {
+func (w *WazeroTestSuite) TestSendRequest() {
 	type test struct {
 		SourceName string
+		Opts       CompileOpts
+		Expected   *v1alpha1.Response
+		Given      *v1alpha1.Request
+		RunCount   int
 	}
 
 	tests := map[string]test{
 		"basic plugin": {
 			SourceName: "basic_plugin",
+			RunCount:   5,
+			Expected:   &v1alpha1.Response{WriteFile: &v1alpha1.WriteFileResponse{Contents: []byte("hi")}},
+			Given:      &v1alpha1.Request{WriteFile: &v1alpha1.WriteFileRequest{}},
+		},
+		"file access": {
+			SourceName: "file_access_plugin",
+			Expected:   &v1alpha1.Response{WriteFile: &v1alpha1.WriteFileResponse{Contents: []byte("derp")}},
+			Given:      &v1alpha1.Request{WriteFile: &v1alpha1.WriteFileRequest{}},
+			Opts: CompileOpts{
+				Mounts: []*Mount{
+					{
+						GuestPath: guestCWDPath,
+						Dir:       fstest.MapFS{"derp.txt": {Data: []byte("derp")}},
+					},
+				},
+			},
 		},
 	}
 
@@ -44,21 +64,29 @@ func (w *WazeroTestSuite) TestWriteFile() {
 			}
 
 			ctx := w.T().Context()
-			plug, err := compiler.Compile(ctx, b, fstest.MapFS{})
+			plug, err := compiler.Compile(ctx, b, v.Opts)
 			if !w.NoError(err) {
 				return
+			}
+
+			runCount := v.RunCount
+			if runCount == 0 {
+				runCount = 1
 			}
 
 			timer := time.Now()
-			resp, err := plug.WriteFile(ctx, &v1alpha1.WriteFileRequest{})
-			if !w.NoError(err) {
-				fmt.Println(plug.Stderr().String())
-				return
+			for range runCount {
+				resp, err := plug.SendRequest(ctx, v.Given)
+				if !w.NoError(err) {
+					fmt.Println(string(resp.Logs()))
+					return
+				}
+				if !w.Equal(v.Expected, resp.Body) {
+					fmt.Println(string(resp.Logs()))
+				}
 			}
 			total := time.Since(timer)
-
-			w.Less(total, 5*time.Millisecond)
-			w.Equal("hi", string(resp.Contents))
+			w.Less(total, time.Duration(runCount+1)*time.Millisecond)
 		})
 	}
 }

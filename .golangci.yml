@@ -162,6 +162,7 @@ linters:
       excludes:
         - G306
         - G301
+        - G115
     cyclop:
       # The maximal code complexity to report.
       # Default: 10
@@ -292,6 +293,9 @@ linters:
       # Default: true
       default-signifies-exhaustive: false
 
+    nestif:
+      min-complexity: 8
+
     gocognit:
       # Minimal code complexity to report.
       # Default: 30 (but we recommend 10-20)
@@ -393,14 +397,6 @@ linters:
         - github.com/jmoiron/sqlx
 
     sloglint:
-      # Enforce not using global loggers.
-      # Values:
-      # - "": disabled
-      # - "all": report all global loggers
-      # - "default": report only the default slog logger
-      # https://github.com/go-simpler/sloglint?tab=readme-ov-file#no-global
-      # Default: ""
-      no-global: all
       # Enforce using methods that accept a context.
       # Values:
       # - "": disabled

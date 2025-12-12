@@ -10,12 +10,16 @@ import (
 	"time"
 
 	"github.com/charmbracelet/huh"
+	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
 	"github.com/urfave/cli/v3"
 
+	"github.com/skiff-sh/skiff/pkg/accesscontrol"
 	"github.com/skiff-sh/skiff/pkg/filesystem"
 	"github.com/skiff-sh/skiff/pkg/interact"
+	"github.com/skiff-sh/skiff/pkg/plugin"
 	"github.com/skiff-sh/skiff/pkg/registry"
 	"github.com/skiff-sh/skiff/pkg/schema"
+	"github.com/skiff-sh/skiff/pkg/system"
 	"github.com/skiff-sh/skiff/pkg/tmpl"
 )
 
@@ -44,26 +48,49 @@ var AddFlagRoot = &cli.StringFlag{
 	Aliases: []string{"r"},
 }
 
+var AddFlagPermissions = &cli.StringSliceFlag{
+	Name: "permission",
+	Usage: "Grant permissions for plugins running on your machine. By default, none are granted. Valid permissions are:\n" + strings.Join(
+		accesscontrol.PermUsageListPretty(accesscontrol.AllPerms()),
+		"\n",
+	),
+	Aliases: []string{"p"},
+	Config: cli.StringConfig{
+		TrimSpace: true,
+	},
+	Validator: func(strs []string) error {
+		for _, v := range strs {
+			_, ok := v1alpha1.PackagePermissions_Plugin_value[v]
+			if !ok {
+				return fmt.Errorf("%s is not a valid permission", v)
+			}
+		}
+		return nil
+	},
+}
+
+var ErrSchema = errors.New("schema error")
+
 type AddAction struct {
-	Packages     []*registry.PackageGenerator
+	Packages     []*v1alpha1.Package
 	PackageFlags map[string][]*schema.Flag
 }
 
 // NewAddAction constructor for AddAction. Packages should be retrieved prior to the construction
 // of this action because flags are dynamically added based on the package schema.
-func NewAddAction(flags map[string][]*schema.Flag, packages []*registry.PackageGenerator) *AddAction {
+func NewAddAction(flags map[string][]*schema.Flag, packages []*v1alpha1.Package) *AddAction {
 	return &AddAction{
 		Packages:     packages,
 		PackageFlags: flags,
 	}
 }
 
-func LoadPackages(ctx context.Context, packages []string) ([]*registry.PackageGenerator, error) {
+func LoadPackages(ctx context.Context, packages []string) ([]*v1alpha1.Package, error) {
 	if len(packages) == 0 {
 		return nil, errors.New("path to package required")
 	}
 
-	generators := make([]*registry.PackageGenerator, 0, len(packages))
+	generators := make([]*v1alpha1.Package, 0, len(packages))
 	loader := initLoader(packages[0])
 	for _, v := range packages {
 		pkg, err := loader.LoadPackage(ctx, v)
@@ -77,48 +104,75 @@ func LoadPackages(ctx context.Context, packages []string) ([]*registry.PackageGe
 	return generators, nil
 }
 
-func FlagsFromPackages(nonInteractive bool, pkgs []*registry.PackageGenerator) (map[string][]*schema.Flag, error) {
+func FlagsFromPackages(nonInteractive bool, pkgs []*v1alpha1.Package) (map[string][]*schema.Flag, error) {
 	out := make(map[string][]*schema.Flag, len(pkgs))
-	multiplePackages := len(pkgs) > 1
-	for _, v := range pkgs {
+	for _, pkg := range pkgs {
+		sc, err := schema.NewSchema(pkg.GetSchema())
+		if err != nil {
+			return nil, fmt.Errorf("package %s: %w", pkg.GetName(), err)
+		}
 		flags := make([]*schema.Flag, 0, len(pkgs))
-		for _, field := range v.Schema.Fields {
+		for _, field := range sc.Fields {
 			fl := schema.FieldToCLIFlag(field)
 			if fl == nil {
-				return nil, fmt.Errorf("invalid flag %s", v.Proto.GetName())
+				return nil, fmt.Errorf("package %s: invalid flag %s", pkg.GetName(), field.Proto.GetName())
 			}
 
-			fl.Package = v.Proto.GetName()
-			namespaced := v.Proto.GetName() + "." + fl.Accessor.Name()
-			fl.Accessor.SetCategory(fmt.Sprintf("%s data", v.Proto.GetName()))
-			if multiplePackages {
-				// Names must be namespaces to avoid conflicts.
-				fl.Accessor.SetName(namespaced)
-			} else {
-				// Set namespaced aliases so that the API is consistent with the multiple packages.
-				fl.Accessor.SetAliases([]string{namespaced})
-			}
+			fl.Package = pkg.GetName()
+			namespaced := pkg.GetName() + "." + fl.Accessor.Name()
+			fl.Accessor.SetCategory(fmt.Sprintf("%s flags", pkg.GetName()))
+			// Names must be namespaces to avoid conflicts.
+			fl.Accessor.SetName(namespaced)
 			if nonInteractive {
 				fl.Accessor.SetRequired(true)
 			}
 			flags = append(flags, fl)
 		}
-		out[v.Proto.GetName()] = flags
+		out[pkg.GetName()] = flags
 	}
 
 	return out, nil
 }
 
 type AddArgs struct {
-	ProjectRoot filesystem.Filesystem
-	CreateAll   bool
+	ProjectRoot  filesystem.Filesystem
+	CreateAll    bool
+	GrantedPerms []v1alpha1.PackagePermissions_Plugin
 }
 
 func (a *AddAction) Act(ctx context.Context, args *AddArgs) error {
-	data := schema.NewData()
+	pkgs := a.Packages
+	pkgFlags := a.PackageFlags
+	pkgSystems := map[string]system.System{}
+	granter := accesscontrol.NewTerminalGranter()
+	mediator := system.NewMediator()
+
+	var removeIdx []int
+	for i, pkg := range pkgs {
+		policy := accesscontrol.NewPluginAccessPolicy(args.GrantedPerms)
+		needed := policy.Diff(pkg.GetPermissions().GetPlugin()...)
+		if len(needed) > 0 && !granter.RequestAccess(ctx, pkg.GetName(), needed) {
+			removeIdx = append(removeIdx, i)
+		} else {
+			policy.Grant(needed...)
+			pkgSystems[pkg.GetName()] = mediator.MediatedSystem(policy)
+		}
+	}
+
+	for _, v := range removeIdx {
+		pkg := pkgs[v]
+		delete(pkgFlags, pkg.GetName())
+		pkgs = slices.Delete(pkgs, v, v+1)
+	}
+
+	if len(pkgs) == 0 {
+		return nil
+	}
+
+	data := schema.NewDataSource()
 
 	missingPackageFlags := map[string][]*schema.Flag{}
-	for packageName, flags := range a.PackageFlags {
+	for packageName, flags := range pkgFlags {
 		for i := range flags {
 			if flags[i].Flag.IsSet() {
 				data.AddPackageEntry(packageName, flags[i])
@@ -145,19 +199,19 @@ func (a *AddAction) Act(ctx context.Context, args *AddArgs) error {
 			formFields = append(formFields, ff)
 		}
 
-		pkg := a.Packages[slices.IndexFunc(a.Packages, func(p *registry.PackageGenerator) bool {
-			return p.Proto.GetName() == packageName
+		pkg := pkgs[slices.IndexFunc(pkgs, func(p *v1alpha1.Package) bool {
+			return p.GetName() == packageName
 		})]
 
 		pkgFormFields[packageName] = formFields
 
 		group := interact.NewHuhGroup(schema.FlattenHuhFields(formFields)...)
-		group.Title(fmt.Sprintf("Package %s", pkg.Proto.GetName())).Description(pkg.Proto.GetDescription())
+		group.Title(fmt.Sprintf("Package %s", pkg.GetName())).Description(pkg.GetDescription())
 		groups = append(groups, group)
 	}
 
 	form := interact.NewHuhForm(groups...)
-	err := interact.FormRunner(ctx, form)
+	err := interact.DefaultFormRunner(ctx, form)
 	if err != nil {
 		return err
 	}
@@ -170,29 +224,44 @@ func (a *AddAction) Act(ctx context.Context, args *AddArgs) error {
 
 	confirmer := func(ctx context.Context, f *registry.File) (bool, error) {
 		var prompt string
-		if args.ProjectRoot.Exists(f.Proto.GetTarget()) {
-			prompt = fmt.Sprintf("Edit file %s", f.Proto.GetTarget())
+		if args.ProjectRoot.Exists(f.Path) {
+			prompt = fmt.Sprintf("Edit file %s", f.Path)
 		} else {
-			prompt = fmt.Sprintf("Create file %s", f.Proto.GetTarget())
+			prompt = fmt.Sprintf("Create file %s", f.Path)
 		}
-		return interact.Confirm(ctx, prompt)
+		conf := interact.Confirm(ctx, func(c *huh.Confirm) *huh.Confirm {
+			return c.Title(prompt)
+		})
+		return conf, nil
 	}
-	if !args.CreateAll {
+	if args.CreateAll {
 		confirmer = func(_ context.Context, _ *registry.File) (bool, error) {
 			return true, nil
 		}
 	}
 
-	for _, gen := range a.Packages {
-		data := data.Package(gen.Proto.GetName())
+	compiler, err := plugin.NewWazeroCompiler()
+	if err != nil {
+		return err
+	}
 
-		pkg, err := gen.Generate(data.RawData())
+	tmplFact := tmpl.NewGoFactory()
+
+	for _, v := range pkgs {
+		data := data.Package(v.GetName())
+
+		gen, err := registry.NewPackageGenerator(ctx, compiler, pkgSystems[v.GetName()], tmplFact, v)
+		if err != nil {
+			return fmt.Errorf("package %s: %w", v.GetName(), err)
+		}
+
+		pkg, err := gen.Generate(ctx, data)
 		if err != nil {
 			return err
 		}
 
-		for _, v := range pkg.Files {
-			ok, err := confirmer(ctx, v)
+		for _, fi := range pkg.Files {
+			ok, err := confirmer(ctx, fi)
 			if err != nil {
 				return err
 			}
@@ -201,9 +270,9 @@ func (a *AddAction) Act(ctx context.Context, args *AddArgs) error {
 				continue
 			}
 
-			err = v.WriteTo(args.ProjectRoot)
+			err = fi.WriteTo(args.ProjectRoot)
 			if err != nil {
-				interact.Errorf("Failed to write file %s: %s", v.Proto.GetTarget(), err.Error())
+				interact.Errorf("Failed to write file %s: %s", fi.Path, err.Error())
 			}
 		}
 	}
@@ -212,12 +281,11 @@ func (a *AddAction) Act(ctx context.Context, args *AddArgs) error {
 }
 
 func initLoader(pa string) registry.Loader {
-	tmplFact := tmpl.NewGoFactory()
 	if registry.IsHTTPPath(pa) {
 		cl := &http.Client{
 			Timeout: 1 * time.Second,
 		}
-		return registry.NewHTTPLoader(tmplFact, cl)
+		return registry.NewHTTPLoader(cl)
 	}
-	return registry.NewFileLoader(tmplFact)
+	return registry.NewFileLoader()
 }

@@ -7,16 +7,14 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/huh v0.8.0
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/charmbracelet/x/exp/teatest v0.0.0-20251118172736-77d017256798
+	github.com/charmbracelet/x/exp/teatest v0.0.0-20251211193724-5cb91212b903
 	github.com/charmbracelet/x/term v0.2.2
 	github.com/google/go-cmp v0.7.0
-	github.com/skiff-sh/api/go v0.0.0-20251125000145-f6e1d88b9355
+	github.com/skiff-sh/api/go v0.0.0-20251209235135-958b4a9deb61
 	github.com/skiff-sh/config v0.0.0-20250921220812-93e59348136e
-	github.com/skiff-sh/sdk-go v0.0.0-20251202173838-ab70d40f82a8
-	github.com/skiff-sh/skiff/sdk-go v0.0.0-20251124231618-b96d93674616
+	github.com/skiff-sh/sdk-go v0.0.0-20251211011239-f944c99006d7
 	github.com/stretchr/testify v1.11.1
 	github.com/tetratelabs/wazero v1.10.1
-	github.com/traefik/yaegi v0.16.1
 	github.com/urfave/cli/v3 v3.6.1
 	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6
 	golang.org/x/text v0.31.0
@@ -66,7 +64,6 @@ require (
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/skiff-sh/skiff/api/go v0.0.0-20251124224920-1168d4d63dc6 // indirect
 	github.com/stoewer/go-strcase v1.3.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect

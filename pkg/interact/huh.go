@@ -8,7 +8,7 @@ import (
 	"github.com/charmbracelet/x/term"
 )
 
-var FormRunner = func(ctx context.Context, f *huh.Form) error {
+var DefaultFormRunner = func(ctx context.Context, f *huh.Form) error {
 	return f.RunWithContext(ctx)
 }
 
@@ -26,22 +26,11 @@ func IsTerminal() bool {
 	return term.IsTerminal(os.Stdin.Fd())
 }
 
-func Prompt(ctx context.Context, prompt string) (string, error) {
-	var val string
-	var err = NewHuhForm(NewHuhGroup(huh.NewInput().Title(prompt).Value(&val))).RunWithContext(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return val, nil
-}
-
-func Confirm(ctx context.Context, prompt string) (bool, error) {
+func Confirm(ctx context.Context, fact func(c *huh.Confirm) *huh.Confirm) bool {
 	var val bool
-	var err = NewHuhForm(NewHuhGroup(huh.NewConfirm().Title(prompt).Value(&val))).RunWithContext(ctx)
+	err := DefaultFormRunner(ctx, NewHuhForm(NewHuhGroup(fact(huh.NewConfirm()).Value(&val))))
 	if err != nil {
-		return false, err
+		return false
 	}
-
-	return val, nil
+	return val
 }

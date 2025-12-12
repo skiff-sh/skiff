@@ -3,16 +3,14 @@ package registry
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
-	"github.com/skiff-sh/skiff/pkg/bufferpool"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/skiff-sh/skiff/pkg/filesystem"
 	"github.com/skiff-sh/skiff/pkg/protoencode"
-	"github.com/skiff-sh/skiff/pkg/tmpl"
 	"github.com/skiff-sh/skiff/pkg/valid"
 )
 
@@ -20,22 +18,9 @@ func IsHTTPPath(p string) bool {
 	return strings.HasPrefix(p, "http") || strings.HasPrefix(p, "https")
 }
 
-func Load(r io.Reader) (*v1alpha1.Registry, error) {
-	buf := bufferpool.GetBytesBuffer()
-	defer bufferpool.PutBytesBuffer(buf)
-	_, err := io.Copy(buf, r)
-	if err != nil {
-		return nil, err
-	}
-
-	reg := new(v1alpha1.Registry)
-	err = protoencode.Unmarshaller.Unmarshal(buf.Bytes(), reg)
-	return reg, err
-}
-
 type Loader interface {
 	LoadRegistry(ctx context.Context, path string) (*v1alpha1.Registry, error)
-	LoadPackage(ctx context.Context, path string) (*PackageGenerator, error)
+	LoadPackage(ctx context.Context, path string) (*v1alpha1.Package, error)
 }
 
 type HTTPClient interface {
@@ -45,101 +30,63 @@ type HTTPClient interface {
 var _ Loader = (*FileLoader)(nil)
 
 type FileLoader struct {
-	TemplateFactory tmpl.Factory
 }
 
-func NewFileLoader(tmplFact tmpl.Factory) *FileLoader {
-	return &FileLoader{
-		TemplateFactory: tmplFact,
-	}
+func NewFileLoader() *FileLoader {
+	return &FileLoader{}
 }
 
 func (f *FileLoader) LoadRegistry(_ context.Context, path string) (*v1alpha1.Registry, error) {
-	fi, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = fi.Close()
-	}()
-
-	return Load(fi)
+	reg := new(v1alpha1.Registry)
+	err := protoencode.LoadFile(path, reg)
+	return reg, err
 }
 
-func (f *FileLoader) LoadPackage(_ context.Context, path string) (*PackageGenerator, error) {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	pkg := new(v1alpha1.Package)
-	err = protoencode.Unmarshaller.Unmarshal(b, pkg)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewPackageGenerator(f.TemplateFactory, pkg)
+func (f *FileLoader) LoadPackage(_ context.Context, path string) (*v1alpha1.Package, error) {
+	reg := new(v1alpha1.Package)
+	err := protoencode.LoadFile(path, reg)
+	return reg, err
 }
 
 var _ Loader = (*HTTPLoader)(nil)
 
 type HTTPLoader struct {
-	Client          HTTPClient
-	TemplateFactory tmpl.Factory
+	Client HTTPClient
 }
 
-func NewHTTPLoader(tmplFact tmpl.Factory, cl HTTPClient) *HTTPLoader {
+func NewHTTPLoader(cl HTTPClient) *HTTPLoader {
 	return &HTTPLoader{
-		Client:          cl,
-		TemplateFactory: tmplFact,
+		Client: cl,
 	}
 }
 
 func (h *HTTPLoader) LoadRegistry(ctx context.Context, path string) (*v1alpha1.Registry, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, path, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := h.Client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	return Load(resp.Body)
+	msg := new(v1alpha1.Registry)
+	err := h.load(ctx, path, msg)
+	return msg, err
 }
 
-func (h *HTTPLoader) LoadPackage(ctx context.Context, path string) (*PackageGenerator, error) {
+func (h *HTTPLoader) LoadPackage(ctx context.Context, path string) (*v1alpha1.Package, error) {
+	msg := new(v1alpha1.Package)
+	err := h.load(ctx, path, msg)
+	return msg, err
+}
+
+func (h *HTTPLoader) load(ctx context.Context, path string, p proto.Message) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, path, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	resp, err := h.Client.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer func() {
 		_ = resp.Body.Close()
 	}()
 
-	buf := bufferpool.GetBytesBuffer()
-	defer bufferpool.PutBytesBuffer(buf)
-	_, err = io.Copy(buf, resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	pkg := new(v1alpha1.Package)
-	err = protoencode.Unmarshaller.Unmarshal(buf.Bytes(), pkg)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewPackageGenerator(h.TemplateFactory, pkg)
+	return protoencode.Load(resp.Body, p)
 }
 
 func ValidateRegistry(reg *v1alpha1.Registry, fsys filesystem.Filesystem) error {
@@ -172,12 +119,12 @@ func ValidatePackage(pkg *Package, fsys filesystem.Filesystem) error {
 	}
 
 	for _, v := range pkg.Files {
-		if _, err := fsys.AsRel(v.Proto.GetTarget()); err != nil {
+		if _, err := fsys.AsRel(v.Path); err != nil {
 			return fmt.Errorf(
 				"file %s in package %s has an invalid target %s: %w",
-				v.Proto.GetPath(),
+				v.SourcePath,
 				pkg.Proto.GetName(),
-				v.Proto.GetTarget(),
+				v.Path,
 				err,
 			)
 		}

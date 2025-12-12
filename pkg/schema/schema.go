@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
+
 	"github.com/skiff-sh/skiff/pkg/fields"
 )
 

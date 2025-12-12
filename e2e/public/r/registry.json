@@ -1,0 +1,56 @@
+{
+  "name": "my-company",
+  "description": "Create opinionated files for your project.",
+  "packages": [
+    {
+      "name": "create-http-route",
+      "description": "Creates a new controller and registers it.",
+      "files": [
+        {
+          "path": "templates/controller.tmpl",
+          "target": "controller/{{.name}}.go"
+        },
+        {
+          "path": "plugins/plugin.go",
+          "target": "controller/controller.go",
+          "type": "plugin"
+        }
+      ],
+      "schema": {
+        "fields": [
+          {
+            "name": "name",
+            "type": "string",
+            "description": "The name of your controller"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "description": "The HTTP method for your controller",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "DELETE",
+              "HEAD",
+              "CONNECT",
+              "OPTIONS",
+              "TRACE",
+              "PATCH"
+            ]
+          },
+          {
+            "name": "path",
+            "type": "string",
+            "description": "The path expression for your controller"
+          }
+        ]
+      },
+      "permissions": {
+        "plugin": [
+          "cwd_ro"
+        ]
+      }
+    }
+  ]
+}

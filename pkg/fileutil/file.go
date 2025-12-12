@@ -1,17 +1,18 @@
 package fileutil
 
 import (
-	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/skiff-sh/skiff/pkg/system"
 )
 
-// FindSibling recursively searches upwards from the "from" parameter until a sibling directory of "target" is found. If the "target"
-// directory is found, the fullfile path of the "target" directory is returned, otherwise, an error is returned. If the
+// FindSibling recursively searches upwards from the "from" parameter until a sibling file of "target" is found. If the "target"
+// file is found, the fullfile path of the "target" file is returned, otherwise, an error is returned. If the
 // "target" cannot be found, an error is returned. If the root of the filesystem is reached, an error is returned.
 func FindSibling(from, target string) (string, error) {
 	var err error
@@ -33,12 +34,12 @@ func FindSibling(from, target string) (string, error) {
 
 func Exists(fp string) bool {
 	_, err := os.Stat(fp)
-	return !errors.Is(err, fs.ErrNotExist)
+	return err == nil
 }
 
 func ExistsFS(f fs.FS, fp string) bool {
 	_, err := fs.Stat(f, fp)
-	return !errors.Is(err, fs.ErrNotExist)
+	return err == nil
 }
 
 func IsRel(root, fp string) bool {
@@ -95,4 +96,26 @@ func SplitFilename(filename string) (base, ext string) {
 	// Remove leading dot from extension, if present
 	ext = strings.TrimPrefix(ext, ".")
 	return base, ext
+}
+
+// MustAbs same as Abs but panics if an error is encountered.
+func MustAbs(fp string) string {
+	a, err := Abs(fp)
+	if err != nil {
+		panic(err)
+	}
+	return a
+}
+
+// Abs ensures fp is an absolute path. Uses the system.CWD variable (if set).
+func Abs(fp string) (string, error) {
+	if filepath.IsAbs(fp) {
+		return fp, nil
+	}
+
+	wd, err := system.Getwd()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(wd, fp), nil
 }

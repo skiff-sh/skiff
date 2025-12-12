@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
+
 	"github.com/skiff-sh/skiff/pkg/fields"
 	"github.com/skiff-sh/skiff/pkg/interact"
 	"github.com/skiff-sh/skiff/pkg/testutil"
