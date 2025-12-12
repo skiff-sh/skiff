@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"io"
-	"os"
 	"slices"
 	"strings"
 
+	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
 	"github.com/urfave/cli/v3"
+
+	"github.com/skiff-sh/skiff/pkg/collection"
+	"github.com/skiff-sh/skiff/pkg/system"
 
 	"github.com/skiff-sh/skiff/pkg/filesystem"
 )
@@ -149,6 +152,7 @@ func newAddCmd(ctx context.Context, args []string) (*cli.Command, error) {
 			AddFlagNonInteractive,
 			AddFlagCreateAll,
 			AddFlagRoot,
+			AddFlagPermissions,
 		},
 		Arguments: []cli.Argument{
 			AddArgPackages,
@@ -180,7 +184,7 @@ func newAddCmd(ctx context.Context, args []string) (*cli.Command, error) {
 		return nil, err
 	}
 
-	flags, err := FlagsFromPackages(argsHaveBoolFlag(cmdArgs, AddFlagNonInteractive), pkgs)
+	flags, err := FlagsFromPackages(argsHaveFlag(args, AddFlagNonInteractive), pkgs)
 	if err != nil {
 		return nil, err
 	}
@@ -193,22 +197,39 @@ func newAddCmd(ctx context.Context, args []string) (*cli.Command, error) {
 		}
 	}
 	addCmd.Flags = append(addCmd.Flags, flatFlags...)
+
 	addCmd.Action = func(ctx context.Context, command *cli.Command) error {
 		root := command.String(AddFlagRoot.Name)
 		if root == "" {
-			root, err = os.Getwd()
+			root, err = system.Getwd()
 			if err != nil {
 				return err
 			}
 		}
-		return act.Act(ctx, &AddArgs{
+
+		perms := command.StringSlice(AddFlagPermissions.Name)
+
+		err := act.Act(ctx, &AddArgs{
 			ProjectRoot: filesystem.New(root),
+			CreateAll:   command.Bool(AddFlagCreateAll.Name),
+			GrantedPerms: collection.Map(perms, func(e string) v1alpha1.PackagePermissions_Plugin {
+				return v1alpha1.PackagePermissions_Plugin(v1alpha1.PackagePermissions_Plugin_value[e])
+			}),
 		})
+		if err != nil {
+			if errors.Is(err, ErrSchema) {
+				_ = cli.ShowSubcommandHelp(command)
+			}
+			return err
+		}
+
+		return nil
 	}
 	return addCmd, nil
 }
 
 func filterFlagsFromArgs(s []string, possibleFlags []cli.Flag) []string {
+	possibleFlags = append(possibleFlags, cli.HelpFlag, cli.VersionFlag)
 	skipNext := false
 	out := make([]string, 0, len(s))
 	for _, v := range s {
@@ -237,9 +258,9 @@ func filterFlagsFromArgs(s []string, possibleFlags []cli.Flag) []string {
 	return out
 }
 
-func argsHaveBoolFlag(args []string, fl cli.Flag) bool {
+func argsHaveFlag(args []string, fl cli.Flag) bool {
 	names := fl.Names()
 	return slices.ContainsFunc(args, func(s string) bool {
-		return slices.Contains(names, s)
+		return slices.Contains(names, strings.TrimLeft(s, "-"))
 	})
 }

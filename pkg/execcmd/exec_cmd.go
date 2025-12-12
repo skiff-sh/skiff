@@ -3,10 +3,12 @@ package execcmd
 import (
 	"bytes"
 	"context"
+	"log/slog"
 	"os/exec"
 	"strings"
 
 	"github.com/skiff-sh/skiff/pkg/bufferpool"
+	"github.com/skiff-sh/skiff/pkg/system"
 )
 
 // Runner runs an exec.Cmd. Useful for tracking and testing command runs.
@@ -19,14 +21,16 @@ type Cmd struct {
 	Buffers *Buffers
 }
 
-func (c *Cmd) Close() {
-	c.Buffers.Close()
-}
-
 func NewCmd(ctx context.Context, name string, args ...string) (*Cmd, error) {
 	cmd := exec.CommandContext(ctx, name, args...)
 	if cmd.Err != nil {
 		return nil, cmd.Err
+	}
+
+	var err error
+	cmd.Dir, err = system.Getwd()
+	if err != nil {
+		return nil, err
 	}
 
 	buffs := NewBuffers()
@@ -38,7 +42,12 @@ func NewCmd(ctx context.Context, name string, args ...string) (*Cmd, error) {
 	}, nil
 }
 
+func (c *Cmd) Close() {
+	c.Buffers.Close()
+}
+
 func Run(cmd *Cmd) error {
+	slog.Debug("Running command.", "args", cmd.Cmd.Args, "dir", cmd.Cmd.Dir)
 	return DefaultRunner.Run(cmd)
 }
 
@@ -55,6 +64,12 @@ func (r RunnerFunc) Run(cmd *Cmd) error {
 	return r(cmd)
 }
 
+type Buffers struct {
+	Stdout *bytes.Buffer
+	Stdin  *bytes.Buffer
+	Stderr *bytes.Buffer
+}
+
 func NewBuffers() *Buffers {
 	stdout, stderr, stdin := bufferpool.GetBytesBuffer(), bufferpool.GetBytesBuffer(), bufferpool.GetBytesBuffer()
 	return &Buffers{
@@ -64,10 +79,12 @@ func NewBuffers() *Buffers {
 	}
 }
 
-type Buffers struct {
-	Stdout *bytes.Buffer
-	Stdin  *bytes.Buffer
-	Stderr *bytes.Buffer
+func (b *Buffers) Copy() *Buffers {
+	buff := NewBuffers()
+	buff.Stdin.Write(b.Stdout.Bytes())
+	buff.Stdin.Write(b.Stdin.Bytes())
+	buff.Stderr.Write(b.Stderr.Bytes())
+	return buff
 }
 
 func (b *Buffers) Attach(cmd *exec.Cmd) {
@@ -76,6 +93,12 @@ func (b *Buffers) Attach(cmd *exec.Cmd) {
 
 func (b *Buffers) Close() {
 	bufferpool.PutBytesBuffers(b.Stderr, b.Stdin, b.Stdout)
+}
+
+func (b *Buffers) Reset() {
+	b.Stdout.Reset()
+	b.Stderr.Reset()
+	b.Stdin.Reset()
 }
 
 func EnvVarsToMap(evs []string) map[string]string {

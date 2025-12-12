@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/skiff-sh/skiff/pkg/execcmd"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/skiff-sh/skiff/pkg/execcmd"
 )
 
 type GoCmdTestSuite struct {
@@ -32,7 +33,7 @@ func (g *GoCmdTestSuite) TestVersion() {
 	for desc, v := range tests {
 		g.Run(desc, func() {
 			execcmd.DefaultRunner = execcmd.RunnerFunc(func(cmd *execcmd.Cmd) error {
-				cmd.Buffers.Stdout = bytes.NewBuffer([]byte(v.Given))
+				cmd.Buffers.Stdout = bytes.NewBufferString(v.Given)
 				return nil
 			})
 
@@ -89,7 +90,7 @@ func (g *GoCmdTestSuite) TestBuild() {
 			}
 
 			ctx := g.T().Context()
-			err = gocmd.Build(ctx, v.Given)
+			_, err = gocmd.Build(ctx, v.Given)
 			if !g.NoError(err) {
 				return
 			}

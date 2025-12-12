@@ -9,11 +9,6 @@ var _ skiff.Plugin = (*Plugin)(nil)
 
 type Plugin struct{}
 
-type req struct {
-	Path   string
-	Target string
-}
-
 func (p *Plugin) WriteFile(_ *skiff.Context, _ *v1alpha1.WriteFileRequest) (*v1alpha1.WriteFileResponse, error) {
 	return &v1alpha1.WriteFileResponse{Contents: []byte("hi")}, nil
 }
@@ -23,5 +18,4 @@ func init() {
 }
 
 func main() {
-	skiff.Register(new(Plugin))
 }

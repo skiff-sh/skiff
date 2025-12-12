@@ -1,13 +1,17 @@
 package schema
 
 import (
+	pluginv1alpha1 "github.com/skiff-sh/api/go/skiff/plugin/v1alpha1"
 	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
+	"github.com/skiff-sh/config/ptr"
+
 	"github.com/skiff-sh/skiff/pkg/collection"
 	"github.com/skiff-sh/skiff/pkg/fields"
 )
 
 type Value interface {
 	Any() any
+	Plugin() *pluginv1alpha1.Value
 	String() string
 	Number() float64
 	Bool() bool
@@ -49,6 +53,32 @@ type value struct {
 	Val       any
 	Typ       v1alpha1.Field_Type
 	ItemsType *v1alpha1.Field_Type
+}
+
+func (v *value) Plugin() *pluginv1alpha1.Value {
+	out := &pluginv1alpha1.Value{}
+
+	switch v.Typ {
+	case v1alpha1.Field_string:
+		out.String = ptr.Ptr(v.String())
+	case v1alpha1.Field_bool:
+		out.Bool = ptr.Ptr(v.Bool())
+	case v1alpha1.Field_number:
+		out.Number = ptr.Ptr(v.Number())
+	case v1alpha1.Field_array:
+		out.List = &pluginv1alpha1.ValueList{}
+	}
+
+	if v.ItemsType != nil {
+		it := *v.ItemsType
+		if it == v1alpha1.Field_number {
+			out.List.Numbers = v.Numbers()
+		} else {
+			out.List.Strings = v.Strings()
+		}
+	}
+
+	return out
 }
 
 func (v *value) Any() any {

@@ -1,6 +1,10 @@
 package collection
 
-import "github.com/skiff-sh/skiff/pkg/bufferpool"
+import (
+	"fmt"
+
+	"github.com/skiff-sh/skiff/pkg/bufferpool"
+)
 
 func Map[S ~[]E, E, T any](s S, mapper func(e E) T) []T {
 	out := make([]T, 0, len(s))
@@ -30,6 +34,10 @@ func Keys[K comparable, V any](m map[K]V) []K {
 	return out
 }
 
+func StringerFunc[E fmt.Stringer](e E) string {
+	return e.String()
+}
+
 func Values[K comparable, V any](m map[K]V) []V {
 	out := make([]V, 0, len(m))
 	for k := range m {
@@ -49,12 +57,31 @@ func Filter[S ~[]E, E any](s S, f func(e E) bool) S {
 	return out
 }
 
+func Find[S ~[]E, E any](s S, f func(e E) bool) (out E) {
+	for _, out = range s {
+		if f(out) {
+			return out
+		}
+	}
+	return out
+}
+
 func Suffix[T ~string](suffix string, t ...T) string {
 	buf := bufferpool.GetBytesBuffer()
 	defer bufferpool.PutBytesBuffer(buf)
 	for _, v := range t {
 		buf.WriteString(string(v))
 		buf.WriteString(suffix)
+	}
+	return buf.String()
+}
+
+func Prefix[T ~string](prefix string, t ...T) string {
+	buf := bufferpool.GetBytesBuffer()
+	defer bufferpool.PutBytesBuffer(buf)
+	for _, v := range t {
+		buf.WriteString(prefix)
+		buf.WriteString(string(v))
 	}
 	return buf.String()
 }

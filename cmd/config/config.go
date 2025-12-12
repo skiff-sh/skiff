@@ -1,10 +1,11 @@
 package config
 
 import (
-	"os"
 	"path/filepath"
 
 	"github.com/skiff-sh/config"
+
+	"github.com/skiff-sh/skiff/pkg/system"
 )
 
 type Config struct {
@@ -21,7 +22,7 @@ func NewConfig() (*Config, error) {
 		return nil, err
 	}
 
-	wd, err := os.Getwd()
+	wd, err := system.Getwd()
 	if err != nil {
 		return nil, err
 	}

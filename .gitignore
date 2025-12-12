@@ -32,7 +32,7 @@ go.work.sum
 .vscode/
 
 # Don't commit builds of examples
-examples/**/public
+**/public/r/**
 
 # generated binary
 bin

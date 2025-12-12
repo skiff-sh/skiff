@@ -11,17 +11,18 @@ import (
 )
 
 type Filesystem interface {
+	fs.FS
+	fs.ReadFileFS
+
 	// WriteFile writes a file to the project root. If name is absolute and not within the project root, an error is returned. Automatically creates directories for file recursively.
 	WriteFile(name string, content []byte) error
-
-	ReadFile(name string) ([]byte, error)
-
-	Open(name string) (fs.File, error)
 
 	// AsRel returns the enforced relative path to the root. If name is absolute and not within the path, an error is returned.
 	AsRel(name string) (string, error)
 
 	Exists(name string) bool
+
+	AbsolutePath(name string) string
 }
 
 type WriterTo interface {
@@ -30,7 +31,7 @@ type WriterTo interface {
 
 func New(fp string) Filesystem {
 	return &fsys{
-		RootP:  fp,
+		RootP:  fileutil.MustAbs(fp),
 		RootFS: os.DirFS(fp),
 	}
 }
@@ -38,6 +39,10 @@ func New(fp string) Filesystem {
 type fsys struct {
 	RootP  string
 	RootFS fs.FS
+}
+
+func (f *fsys) AbsolutePath(name string) string {
+	return filepath.Join(f.RootP, name)
 }
 
 func (f *fsys) Exists(name string) bool {

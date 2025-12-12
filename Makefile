@@ -36,11 +36,20 @@ croc.receive:
 
 croc: croc.receive mocks
 
-update.api:
-	cd cmd && go get github.com/skiff-sh/api/go
-	cd sdk-go && go get github.com/skiff-sh/api/go
-	cd examples/go-fiber-controller && go get github.com/skiff-sh/api/go
+update:
+	go get github.com/skiff-sh/api/go@main
+	go get github.com/skiff-sh/sdk-go@main
+	cd examples/go-fiber-controller && go get github.com/skiff-sh/api/go@main
+	cd examples/go-fiber-controller && go get github.com/skiff-sh/sdk-go@main
+	cd examples/go-fiber-controller/.skiff/plugins && go get github.com/skiff-sh/api/go@main
+	cd examples/go-fiber-controller/.skiff/plugins && go get github.com/skiff-sh/sdk-go@main
+
+update.force:
+	etc/update.sh ../api github.com/skiff-sh/api/go
+	etc/update.sh ../sdk-go github.com/skiff-sh/sdk-go
+	cd examples/go-fiber-controller && ../../etc/update.sh ../../../sdk-go github.com/skiff-sh/sdk-go
+	cd examples/go-fiber-controller && ../../etc/update.sh ../../../api github.com/skiff-sh/api/go
 
 testdata:
 	rm -f pkg/plugin/testdata/*.wasm
-	GOOS=wasip1 GOARCH=wasm go build -buildmode=c-shared -o pkg/plugin/testdata/basic_plugin.wasm pkg/plugin/testdata/basic_plugin.go
+	etc/testdata.sh
