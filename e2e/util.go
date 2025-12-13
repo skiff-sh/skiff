@@ -43,14 +43,14 @@ func CloneExample(examples fs.FS, dirName string) (string, error) {
 		}
 
 		target := filepath.Join(tmp, path)
-		_ = os.MkdirAll(filepath.Dir(target), 0755)
+		_ = os.MkdirAll(filepath.Dir(target), fileutil.DefaultDirMode)
 
 		b, err := fs.ReadFile(examples, path)
 		if err != nil {
 			return err
 		}
 
-		return os.WriteFile(target, b, 0644)
+		return os.WriteFile(target, b, fileutil.DefaultFileMode)
 	})
 	if err != nil {
 		return "", err

@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/skiff-sh/skiff/pkg/fileutil"
+
 	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
 
 	"github.com/skiff-sh/skiff/pkg/mocks/registrymocks"
@@ -44,10 +46,10 @@ func (r *RegistryTestSuite) TestFileLoader() {
 			}()
 			b, _ := protoencode.Marshal(v.GivenPackage)
 			pkgPath := filepath.Join(rootDir, "package.json")
-			_ = os.WriteFile(pkgPath, b, 0644)
+			_ = os.WriteFile(pkgPath, b, fileutil.DefaultFileMode)
 			b, _ = protoencode.Marshal(v.GivenRegistry)
 			regPath := filepath.Join(rootDir, "registry.json")
-			_ = os.WriteFile(regPath, b, 0644)
+			_ = os.WriteFile(regPath, b, fileutil.DefaultFileMode)
 
 			loader := NewFileLoader()
 			actualPkg, err := loader.LoadPackage(r.T().Context(), pkgPath)

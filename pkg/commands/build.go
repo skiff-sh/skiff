@@ -1,8 +1,8 @@
 package commands
 
 import (
+	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -16,8 +16,9 @@ import (
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/skiff-sh/skiff/pkg/bufferpool"
+
 	"github.com/skiff-sh/skiff/pkg/filesystem"
-	"github.com/skiff-sh/skiff/pkg/gocmd"
 	"github.com/skiff-sh/skiff/pkg/plugin"
 
 	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
@@ -53,7 +54,7 @@ type BuildArgs struct {
 }
 
 func (b *BuildCommandAction) Act(ctx context.Context, args *BuildArgs) error {
-	_ = os.MkdirAll(args.OutputDirectory, 0755)
+	_ = os.MkdirAll(args.OutputDirectory, fileutil.DefaultDirMode)
 
 	regPath := fileutil.MustAbs(args.RegistryPath)
 	if !fileutil.Exists(regPath) {
@@ -73,7 +74,9 @@ func (b *BuildCommandAction) Act(ctx context.Context, args *BuildArgs) error {
 	for _, v := range reg.GetPackages() {
 		targetPath := filepath.Join(args.OutputDirectory, v.GetName()+".json")
 		interact.Infof("Writing file %s", targetPath)
-		pkg, err := HydratePackage(ctx, sync.OnceValue(newPluginTools), v, regFS)
+		pkg, err := HydratePackage(ctx, sync.OnceValue(func() *buildTools {
+			return newPluginTools(ctx)
+		}), v, regFS)
 		if err != nil {
 			return fmt.Errorf("package %s: %w", v.GetName(), err)
 		}
@@ -97,7 +100,7 @@ func (b *BuildCommandAction) Act(ctx context.Context, args *BuildArgs) error {
 	}
 	targetPath := filepath.Join(args.OutputDirectory, "registry.json")
 	interact.Infof("Writing file %s", targetPath)
-	err = os.WriteFile(targetPath, raw, 0644)
+	err = os.WriteFile(targetPath, raw, fileutil.DefaultFileMode)
 	if err != nil {
 		return fmt.Errorf("failed to write registry: %w", err)
 	}
@@ -105,42 +108,25 @@ func (b *BuildCommandAction) Act(ctx context.Context, args *BuildArgs) error {
 	return nil
 }
 
-type pluginTools struct {
-	GoCLI          gocmd.CLI
-	BuildDirectory string
+type buildTools struct {
+	Builder        plugin.Builder
 	PluginCompiler plugin.Compiler
 	Err            error
 }
 
-const minMinorGoVersion = 24
-
-func newPluginTools() *pluginTools {
-	out := &pluginTools{}
+func newPluginTools(ctx context.Context) *buildTools {
+	out := &buildTools{}
 	var err error
-	out.BuildDirectory, err = os.MkdirTemp(os.TempDir(), "*")
+	out.Builder, err = plugin.CreateOrInstallGoBuilder(ctx, &plugin.InstallHooks{
+		OnDownload: func() {
+			interact.Info("Installing Go...")
+		},
+		OnDownloadComplete: func() {
+			interact.Info("Done!")
+		},
+	})
 	if err != nil {
-		out.Err = fmt.Errorf("failed to make temp build directory in %s: %w", os.TempDir(), err)
-		return out
-	}
-
-	out.GoCLI, err = gocmd.New()
-	if err != nil {
-		out.Err = errors.New("go CLI is required to build plugins. Get the CLI here => https://go.dev/doc/install")
-		return out
-	}
-
-	ver, err := out.GoCLI.Version(context.Background())
-	if err != nil {
-		out.Err = fmt.Errorf("failed to get go CLI version: %w", err)
-		return out
-	}
-	if ver.Minor < minMinorGoVersion {
-		out.Err = fmt.Errorf(
-			"go CLI (at %s) is version %s. please upgrade to at least 1.%d to properly build plugins",
-			out.GoCLI.Path(),
-			ver.String(),
-			minMinorGoVersion,
-		)
+		out.Err = fmt.Errorf("failed to instantiate Go CLI: %w", err)
 		return out
 	}
 
@@ -155,11 +141,13 @@ func newPluginTools() *pluginTools {
 
 func HydratePackage(
 	ctx context.Context,
-	toolsProvider func() *pluginTools,
+	toolsProvider func() *buildTools,
 	pkg *v1alpha1.Package,
 	registryRoot filesystem.Filesystem,
 ) (*v1alpha1.Package, error) {
 	out := proto.CloneOf(pkg)
+	buff := bufferpool.GetBytesBuffer()
+	defer bufferpool.PutBytesBuffers(buff)
 	for _, v := range out.GetFiles() {
 		src := v.GetSource()
 		if src == nil {
@@ -191,43 +179,38 @@ func HydratePackage(
 					return nil, fmt.Errorf("file %s: %w", v.GetPath(), tools.Err)
 				}
 
+				abs, err := registryRoot.Abs(v.GetPath())
+				if err != nil {
+					return nil, fmt.Errorf("file %s: %w", v.GetPath(), err)
+				}
+
 				interact.Infof("Building plugin %s", v.GetPath())
-				args := gocmd.BuildArgs{
-					BuildMode:  gocmd.BuildModeCShared,
-					OutputPath: filepath.Join(tools.BuildDirectory, "plugin.go"),
-					Packages:   []string{registryRoot.AbsolutePath(v.GetPath())},
-					GoOS:       gocmd.OSWASIP1,
-					GoArch:     gocmd.ArchWASM,
-					Env:        os.Environ(),
-				}
-
-				buffers, err := tools.GoCLI.Build(ctx, args)
+				src.Raw, err = hydratePlugin(ctx, tools, abs, buff)
 				if err != nil {
-					var stderr string
-					if buffers != nil {
-						stderr = buffers.Stderr.String()
-					}
-					return nil, fmt.Errorf("failed to build plugin %s: %w: %s", v.GetPath(), err, stderr)
+					return nil, err
 				}
-
 				interact.Info("Complete!")
-
-				content, err := os.ReadFile(args.OutputPath)
-				if err != nil {
-					return nil, fmt.Errorf("failed to read WASM output at %s for %s: %w", args.OutputPath, v.GetPath(), err)
-				}
-				_ = os.Remove(args.OutputPath)
-
-				_, err = tools.PluginCompiler.Compile(ctx, content, plugin.CompileOpts{})
-				if err != nil {
-					return nil, fmt.Errorf("failed to compile plugin %s: %w", v.GetPath(), err)
-				}
-
-				src.Raw = content
 			}
 		}
 		v.Source = src
 	}
+	return out, nil
+}
+
+func hydratePlugin(ctx context.Context, tools *buildTools, absPath string, buff *bytes.Buffer) ([]byte, error) {
+	err := tools.Builder.Build(ctx, absPath, buff)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = tools.PluginCompiler.Compile(ctx, buff.Bytes(), plugin.CompileOpts{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile plugin %s: %w", absPath, err)
+	}
+
+	out := make([]byte, len(buff.Bytes()))
+	copy(out, buff.Bytes())
+	buff.Reset()
 	return out, nil
 }
 
@@ -237,5 +220,5 @@ func WritePackage(pkg *v1alpha1.Package, targetPath string) error {
 		return err
 	}
 
-	return os.WriteFile(targetPath, b, 0644)
+	return os.WriteFile(targetPath, b, fileutil.DefaultFileMode)
 }

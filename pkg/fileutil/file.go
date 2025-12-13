@@ -11,6 +11,11 @@ import (
 	"github.com/skiff-sh/skiff/pkg/system"
 )
 
+const (
+	DefaultFileMode = 0o644
+	DefaultDirMode  = 0o755
+)
+
 // FindSibling recursively searches upwards from the "from" parameter until a sibling file of "target" is found. If the "target"
 // file is found, the fullfile path of the "target" file is returned, otherwise, an error is returned. If the
 // "target" cannot be found, an error is returned. If the root of the filesystem is reached, an error is returned.

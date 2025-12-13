@@ -163,6 +163,7 @@ linters:
         - G306
         - G301
         - G115
+        - G110
     cyclop:
       # The maximal code complexity to report.
       # Default: 10

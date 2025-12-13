@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/skiff-sh/skiff/pkg/fileutil"
 )
@@ -13,7 +14,6 @@ import (
 type Filesystem interface {
 	fs.FS
 	fs.ReadFileFS
-
 	// WriteFile writes a file to the project root. If name is absolute and not within the project root, an error is returned. Automatically creates directories for file recursively.
 	WriteFile(name string, content []byte) error
 
@@ -22,7 +22,18 @@ type Filesystem interface {
 
 	Exists(name string) bool
 
-	AbsolutePath(name string) string
+	Abs(name string) (string, error)
+
+	MkdirAll(name string, mode fs.FileMode) error
+	Chmod(name string, mode fs.FileMode) error
+	Chtimes(name string, atime time.Time, mtime time.Time) error
+	OpenFile(name string, flag int, perm fs.FileMode) (*os.File, error)
+	Remove(name string) error
+	// Link same as os.Link. This method deviates from the others because it allows the oldname to be outside the scope of the Filesystem.
+	Link(oldname, newname string) error
+	// Symlink same as os.Symlink. oldname can be outside the scope of the Filesystem.
+	Symlink(oldname, newname string) error
+	Create(name string) (*os.File, error)
 }
 
 type WriterTo interface {
@@ -41,8 +52,83 @@ type fsys struct {
 	RootFS fs.FS
 }
 
-func (f *fsys) AbsolutePath(name string) string {
-	return filepath.Join(f.RootP, name)
+func (f *fsys) Create(name string) (*os.File, error) {
+	fp, err := f.Abs(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return os.Create(fp)
+}
+
+func (f *fsys) Symlink(oldname, newname string) error {
+	fp, err := f.Abs(newname)
+	if err != nil {
+		return err
+	}
+
+	return os.Symlink(oldname, fp)
+}
+
+func (f *fsys) Link(oldname, newname string) error {
+	fp, err := f.Abs(newname)
+	if err != nil {
+		return err
+	}
+
+	return os.Link(oldname, fp)
+}
+
+func (f *fsys) Remove(name string) error {
+	fp, err := f.Abs(name)
+	if err != nil {
+		return err
+	}
+
+	return os.Remove(fp)
+}
+
+func (f *fsys) OpenFile(name string, flag int, perm fs.FileMode) (*os.File, error) {
+	fp, err := f.Abs(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return os.OpenFile(fp, flag, perm)
+}
+
+func (f *fsys) Chtimes(name string, atime time.Time, mtime time.Time) error {
+	fp, err := f.Abs(name)
+	if err != nil {
+		return err
+	}
+
+	return os.Chtimes(fp, atime, mtime)
+}
+
+func (f *fsys) Chmod(name string, mode fs.FileMode) error {
+	fp, err := f.Abs(name)
+	if err != nil {
+		return err
+	}
+
+	return os.Chmod(fp, mode)
+}
+
+func (f *fsys) MkdirAll(name string, mode fs.FileMode) error {
+	fp, err := f.Abs(name)
+	if err != nil {
+		return err
+	}
+	return os.MkdirAll(fp, mode)
+}
+
+func (f *fsys) Abs(name string) (string, error) {
+	rel, err := f.AsRel(name)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(f.RootP, rel), nil
 }
 
 func (f *fsys) Exists(name string) bool {
@@ -66,30 +152,34 @@ func (f *fsys) ReadFile(name string) ([]byte, error) {
 }
 
 func (f *fsys) AsRel(name string) (string, error) {
-	if filepath.IsAbs(name) {
-		if !strings.HasPrefix(name, f.RootP) {
-			return "", fmt.Errorf("relative to the project root %s", f.RootP)
-		}
-	} else {
-		name = filepath.Join(f.RootP, name)
+	abs := filepath.Clean(name)
+	if !filepath.IsAbs(abs) {
+		abs = filepath.Join(f.RootP, name)
 	}
 
-	o, err := filepath.Rel(f.RootP, name)
+	if name == f.RootP {
+		return abs, nil
+	}
+
+	rel, err := filepath.Rel(f.RootP, abs)
 	if err != nil {
-		return "", fmt.Errorf("not relative to project root %s", f.RootP)
+		return "", err
 	}
 
-	return o, nil
+	if strings.HasPrefix(rel, "..") || rel == ".." {
+		return "", fmt.Errorf("relative to the project root %s", f.RootP)
+	}
+
+	return rel, nil
 }
 
 func (f *fsys) WriteFile(name string, content []byte) error {
-	rel, err := f.AsRel(name)
+	target, err := f.Abs(name)
 	if err != nil {
 		return err
 	}
 
-	target := filepath.Join(f.RootP, rel)
-	_ = os.MkdirAll(filepath.Dir(target), 0755)
+	_ = os.MkdirAll(filepath.Dir(target), fileutil.DefaultDirMode)
 
-	return os.WriteFile(target, content, 0644)
+	return os.WriteFile(target, content, fileutil.DefaultFileMode)
 }

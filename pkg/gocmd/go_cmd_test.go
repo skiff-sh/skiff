@@ -2,6 +2,7 @@ package gocmd
 
 import (
 	"bytes"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -37,7 +38,7 @@ func (g *GoCmdTestSuite) TestVersion() {
 				return nil
 			})
 
-			gocmd, err := New()
+			gocmd, err := New("")
 			if !g.NoError(err) {
 				return
 			}
@@ -84,7 +85,7 @@ func (g *GoCmdTestSuite) TestBuild() {
 				return nil
 			})
 
-			gocmd, err := New()
+			gocmd, err := New("")
 			if !g.NoError(err) {
 				return
 			}
@@ -95,6 +96,7 @@ func (g *GoCmdTestSuite) TestBuild() {
 				return
 			}
 
+			actualCmd.Cmd.Args[0] = filepath.Base(actualCmd.Cmd.Args[0])
 			g.Equal(v.ExpectedArgs, actualCmd.Cmd.Args)
 			g.Equal(v.ExpectedEnvVars, execcmd.EnvVarsToMap(actualCmd.Cmd.Env))
 		})
