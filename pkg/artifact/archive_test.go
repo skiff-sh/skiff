@@ -5,9 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/skiff-sh/skiff/pkg/filesystem"
 	"github.com/skiff-sh/skiff/pkg/testutil"
-	"github.com/stretchr/testify/suite"
 )
 
 type ArchiveTestSuite struct {

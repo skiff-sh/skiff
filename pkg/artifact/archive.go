@@ -268,7 +268,9 @@ func writeFileFromTar(
 }
 
 func isExcludedHeaderName(headerName string) bool {
-	return headerName == "" || strings.HasPrefix(filepath.Base(headerName), "._") || strings.HasPrefix(headerName, ".DS_Store") || strings.Contains(headerName, "/.DS_Store")
+	return headerName == "" || strings.HasPrefix(filepath.Base(headerName), "._") ||
+		strings.HasPrefix(headerName, ".DS_Store") ||
+		strings.Contains(headerName, "/.DS_Store")
 }
 
 func copyFile(fsys filesystem.Filesystem, src, dst string) error {
