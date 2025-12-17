@@ -36,3 +36,8 @@ for file_path in "$TARGET_DIR"/*.go; do
 done
 
 echo "Build process complete."
+
+echo "Zipping files for archive tests"
+
+tar -czvf pkg/artifact/testdata/source.tar.gz -C pkg/artifact/testdata source
+cd pkg/artifact/testdata && rm -f source.zip && zip -ry source.zip source

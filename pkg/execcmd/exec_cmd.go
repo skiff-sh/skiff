@@ -11,9 +11,24 @@ import (
 	"github.com/skiff-sh/skiff/pkg/system"
 )
 
+var (
+	// DefaultRunner is the default Runner for the package.
+	DefaultRunner Runner = RunnerFunc(func(cmd *Cmd) error {
+		return cmd.Cmd.Run()
+	})
+
+	// DefaultPathLooker the default PathLooker for the package.
+	DefaultPathLooker PathLooker = PathLookerFunc(exec.LookPath)
+)
+
 // Runner runs an exec.Cmd. Useful for tracking and testing command runs.
 type Runner interface {
 	Run(cmd *Cmd) error
+}
+
+// PathLooker an abstraction around os.LookPath.
+type PathLooker interface {
+	LookPath(fi string) (string, error)
 }
 
 type Cmd struct {
@@ -51,10 +66,17 @@ func Run(cmd *Cmd) error {
 	return DefaultRunner.Run(cmd)
 }
 
-// DefaultRunner is the default Runner for the package.
-var DefaultRunner Runner = RunnerFunc(func(cmd *Cmd) error {
-	return cmd.Cmd.Run()
-})
+func LookPath(fi string) (string, error) {
+	return DefaultPathLooker.LookPath(fi)
+}
+
+var _ PathLooker = (PathLookerFunc)(nil)
+
+type PathLookerFunc func(fi string) (string, error)
+
+func (p PathLookerFunc) LookPath(fi string) (string, error) {
+	return p(fi)
+}
 
 var _ Runner = (RunnerFunc)(nil)
 

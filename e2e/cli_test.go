@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -17,19 +18,21 @@ import (
 	"github.com/charmbracelet/x/exp/teatest"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/skiff-sh/skiff/pkg/execcmd"
+	"github.com/skiff-sh/skiff/pkg/settings"
+
 	"github.com/skiff-sh/skiff/pkg/filesystem"
 
 	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
 
 	"github.com/skiff-sh/skiff/pkg/collection"
-	"github.com/skiff-sh/skiff/pkg/fileutil"
 	"github.com/skiff-sh/skiff/pkg/interact"
 	"github.com/skiff-sh/skiff/pkg/protoencode"
 	"github.com/skiff-sh/skiff/pkg/testutil"
 )
 
 type CliTestSuite struct {
-	Suite
+	testutil.Suite
 }
 
 func (c *CliTestSuite) TestHelp() {
@@ -100,21 +103,54 @@ func (c *CliTestSuite) TestBuild() {
 	type params struct {
 		// The directory housing the cloned example folder.
 		ExampleDir    fs.FS
-		ExampleFS     fileutil.MapFS
-		BuildOutputFS fileutil.MapFS
+		ExampleFS     testutil.MapFS
+		BuildOutputFS testutil.MapFS
 		Actual        *BuildOutput
 	}
 
 	type test struct {
 		Args        []string
 		ExampleName string
+		Setup       func()
+		Cleanup     func(buildDir string)
 		Expected    func(p *params)
 		ExpectedErr string
 	}
 
+	oldPathLooker := execcmd.DefaultPathLooker
 	tests := map[string]test{
 		"go controller all files present": {
 			ExampleName: "go-fiber-controller",
+			Expected: func(p *params) {
+				c.ElementsMatch([]string{"registry.json", "create-http-route.json"}, collection.Keys(p.BuildOutputFS))
+				c.Len(p.Actual.Packages, 1)
+
+				// Check that the contents are the same as the original.
+				for _, pkg := range p.Actual.Packages {
+					for _, fi := range pkg.GetFiles() {
+						c.NotEmpty(string(p.ExampleFS[filepath.Join(".skiff", fi.GetPath())].Data))
+					}
+				}
+			},
+		},
+		"build with managed go CLI": {
+			ExampleName: "go-fiber-controller",
+			Setup: func() {
+				execcmd.DefaultPathLooker = execcmd.PathLookerFunc(func(fi string) (string, error) {
+					if fi == "go" || fi == "go.exe" {
+						return "", exec.ErrNotFound
+					}
+					return exec.LookPath(fi)
+				})
+			},
+			Cleanup: func(buildDir string) {
+				execcmd.DefaultPathLooker = oldPathLooker
+				// For some reason, go deps are installed protected. maybe it's gvm? not 100% sure if this is consistent on linux or windows.
+				out, err := exec.CommandContext(c.T().Context(), "chmod", "-R", "u+w", buildDir).CombinedOutput()
+				if err != nil {
+					fmt.Println(string(out))
+				}
+			},
 			Expected: func(p *params) {
 				c.ElementsMatch([]string{"registry.json", "create-http-route.json"}, collection.Keys(p.BuildOutputFS))
 				c.Len(p.Actual.Packages, 1)
@@ -140,14 +176,31 @@ func (c *CliTestSuite) TestBuild() {
 				_ = os.RemoveAll(exaDir)
 			}()
 
+			oldBuildDir := settings.BuildDirFunc
+			buildDir := c.T().TempDir()
+			settings.BuildDirFunc = func() (string, error) {
+				return buildDir, nil
+			}
+			defer func() {
+				settings.BuildDirFunc = oldBuildDir
+			}()
+
 			defer c.SetWd(exaDir)()
+
+			if v.Setup != nil {
+				v.Setup()
+			}
+
+			if v.Cleanup != nil {
+				defer v.Cleanup(buildDir)
+			}
 
 			build, ok := c.buildExample(exaDir, v.Args...)
 			if !ok {
 				return
 			}
 
-			actualFS := fileutil.FlatMapFS(os.DirFS(build.OutputDir))
+			actualFS := testutil.FlatMapFS(os.DirFS(build.OutputDir))
 			actual, ok := c.unmarshalBuildOutput(actualFS)
 			if !ok {
 				return
@@ -156,7 +209,7 @@ func (c *CliTestSuite) TestBuild() {
 			exaFS := os.DirFS(exaDir)
 			v.Expected(&params{
 				ExampleDir:    exaFS,
-				ExampleFS:     fileutil.FlatMapFS(exaFS),
+				ExampleFS:     testutil.FlatMapFS(exaFS),
 				BuildOutputFS: actualFS,
 				Actual:        actual,
 			})
@@ -353,7 +406,7 @@ type BuildOutput struct {
 	Packages map[string]*v1alpha1.Package
 }
 
-func (c *CliTestSuite) unmarshalBuildOutput(f fileutil.MapFS) (*BuildOutput, bool) {
+func (c *CliTestSuite) unmarshalBuildOutput(f testutil.MapFS) (*BuildOutput, bool) {
 	out := &BuildOutput{
 		Registry: new(v1alpha1.Registry),
 		Packages: make(map[string]*v1alpha1.Package),

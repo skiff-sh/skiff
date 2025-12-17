@@ -4,14 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 
+	"github.com/skiff-sh/skiff/pkg/artifact"
 	"github.com/skiff-sh/skiff/pkg/except"
 	"github.com/skiff-sh/skiff/pkg/execcmd"
+	"github.com/skiff-sh/skiff/pkg/filesystem"
 	"github.com/skiff-sh/skiff/pkg/fileutil"
 )
 
@@ -19,6 +23,59 @@ type CLI interface {
 	Path() string
 	Version(ctx context.Context) (*Version, error)
 	Build(ctx context.Context, args BuildArgs) (*execcmd.Buffers, error)
+}
+
+func Download(ctx context.Context, ver, to string) (CLI, error) {
+	installer := artifact.NewInstaller(http.DefaultClient)
+
+	fsys := filesystem.New(to)
+	err := installer.InstallHTTP(ctx, &artifact.Go{Version: ver}, artifact.UnarchiveDestination(fsys))
+	if err != nil {
+		return nil, err
+	}
+
+	abs, err := fsys.Abs(filepath.Join("go", "bin", GoFilename()))
+	if err != nil {
+		return nil, err
+	}
+
+	return New(abs)
+}
+
+func GoFilename() string {
+	if runtime.GOOS == "windows" {
+		return "go.exe"
+	}
+	return "go"
+}
+
+func New(binaryPath string) (CLI, error) {
+	out := &goCLI{}
+
+	if binaryPath == "" {
+		binaryPath = "go"
+	}
+
+	if filepath.IsAbs(binaryPath) {
+		if !fileutil.Exists(binaryPath) {
+			return nil, exec.ErrNotFound
+		}
+	} else {
+		var err error
+		binaryPath, err = execcmd.LookPath(binaryPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	cmd := exec.CommandContext(context.Background(), binaryPath)
+	if cmd.Err != nil {
+		return nil, cmd.Err
+	}
+
+	out.path = cmd.Path
+
+	return out, nil
 }
 
 type BuildArgs struct {
@@ -60,19 +117,6 @@ func (v *Version) String() string {
 
 var goVersionRegex = regexp.MustCompile(`.+go([0-9]+)\.([0-9]+)\.([0-9]+)?.+`)
 
-func New() (CLI, error) {
-	out := &goCLI{}
-
-	cmd := exec.CommandContext(context.Background(), "go")
-	if cmd.Err != nil {
-		return nil, cmd.Err
-	}
-
-	out.path = cmd.Path
-
-	return out, nil
-}
-
 type goCLI struct {
 	path string
 }
@@ -82,7 +126,7 @@ func (g *goCLI) Path() string {
 }
 
 func (g *goCLI) Version(ctx context.Context) (*Version, error) {
-	cmd, err := execcmd.NewCmd(ctx, "go", "version")
+	cmd, err := execcmd.NewCmd(ctx, g.path, "version")
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +186,7 @@ func (g *goCLI) Build(ctx context.Context, build BuildArgs) (*execcmd.Buffers, e
 	}
 	args = append(args, build.Packages...)
 
-	cmd, err := execcmd.NewCmd(ctx, "go", args...)
+	cmd, err := execcmd.NewCmd(ctx, g.path, args...)
 	if err != nil {
 		return nil, err
 	}

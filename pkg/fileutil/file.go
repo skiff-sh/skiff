@@ -11,6 +11,11 @@ import (
 	"github.com/skiff-sh/skiff/pkg/system"
 )
 
+const (
+	DefaultFileMode = 0o644
+	DefaultDirMode  = 0o755
+)
+
 // FindSibling recursively searches upwards from the "from" parameter until a sibling file of "target" is found. If the "target"
 // file is found, the fullfile path of the "target" file is returned, otherwise, an error is returned. If the
 // "target" cannot be found, an error is returned. If the root of the filesystem is reached, an error is returned.
@@ -52,39 +57,6 @@ func IsRel(root, fp string) bool {
 func CallerPath(skip int) string {
 	_, file, _, _ := runtime.Caller(skip)
 	return file
-}
-
-type File struct {
-	Data  []byte
-	IsDir bool
-}
-
-type MapFS map[string]File
-
-// FlatMapFS converts a fs.FS into a map of flat paths to their contents. Similar to [fstest.MapFS].
-func FlatMapFS(f fs.FS) MapFS {
-	out := MapFS{}
-
-	_ = fs.WalkDir(f, ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			//nolint:nilerr // only testing.
-			return nil
-		}
-
-		b, err := fs.ReadFile(f, path)
-		if err != nil {
-			//nolint:nilerr // only testing.
-			return nil
-		}
-
-		out[path] = File{
-			Data:  b,
-			IsDir: d.IsDir(),
-		}
-
-		return nil
-	})
-	return out
 }
 
 // SplitFilename splits a filename into base name and extension.
