@@ -69,15 +69,15 @@ func (t *TarGZArchiver) Extract(ctx context.Context, from io.Reader, to filesyst
 			return fmt.Errorf("reading tar header: %w", err)
 		}
 
-		name := hdr.Name
-		if name == "" {
+		if isExcludedHeaderName(hdr.Name) {
 			// Some malformed archives might have empty names; skip them.
 			continue
 		}
+		name := filepath.Clean(hdr.Name)
 
 		// Clean the path and ensure it is within destDir to
 		// prevent path traversal attacks.
-		destPath := filepath.Clean(name)
+		destPath := name
 
 		// Tar headers can contain absolute paths; make them relative.
 		if filepath.IsAbs(destPath) {
@@ -104,20 +104,26 @@ func (t *TarGZArchiver) Extract(ctx context.Context, from io.Reader, to filesyst
 
 		case tar.TypeSymlink:
 			// Ensure parent dir exists.
-			if err := os.MkdirAll(filepath.Dir(destPath), fileutil.DefaultDirMode); err != nil {
+			if err := to.MkdirAll(filepath.Dir(destPath), fileutil.DefaultDirMode); err != nil {
 				return fmt.Errorf("creating parent directory for symlink %q: %w", destPath, err)
 			}
 			// Remove existing path before creating symlink.
-			_ = os.Remove(destPath)
-			if err := os.Symlink(hdr.Linkname, destPath); err != nil {
+			_ = to.Remove(destPath)
+			if err := to.Symlink(hdr.Linkname, destPath); err != nil {
 				return fmt.Errorf("creating symlink %q -> %q: %w", destPath, hdr.Linkname, err)
 			}
 
 		case tar.TypeLink:
 			// Hard link. We'll best-effort create it if the target exists inside
 			// the extraction root. If it doesn't, skip.
-			targetPath := filepath.Clean(hdr.Linkname)
-			if _, err := os.Stat(targetPath); err == nil {
+			targetPath, err := to.Abs(hdr.Linkname)
+			if err != nil {
+				return fmt.Errorf(
+					"creating hardlink %q -> %q: %w",
+					destPath, targetPath, err,
+				)
+			}
+			if _, err := to.Stat(targetPath); err == nil {
 				// Remove if something already exists at destPath.
 				_ = to.Remove(destPath)
 				if err := to.Link(targetPath, destPath); err != nil {
@@ -170,7 +176,7 @@ func (z *ZipArchiver) Extract(ctx context.Context, from io.Reader, to filesystem
 		default:
 		}
 
-		if f.Name == "" {
+		if isExcludedHeaderName(f.Name) {
 			continue
 		}
 
@@ -259,6 +265,10 @@ func writeFileFromTar(
 	_ = fsys.Chtimes(destPath, modTime, modTime)
 
 	return nil
+}
+
+func isExcludedHeaderName(headerName string) bool {
+	return headerName == "" || strings.HasPrefix(filepath.Base(headerName), "._") || strings.HasPrefix(headerName, ".DS_Store") || strings.Contains(headerName, "/.DS_Store")
 }
 
 func copyFile(fsys filesystem.Filesystem, src, dst string) error {

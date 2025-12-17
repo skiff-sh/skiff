@@ -34,6 +34,8 @@ type Filesystem interface {
 	// Symlink same as os.Symlink. oldname can be outside the scope of the Filesystem.
 	Symlink(oldname, newname string) error
 	Create(name string) (*os.File, error)
+
+	Stat(name string) (fs.FileInfo, error)
 }
 
 type WriterTo interface {
@@ -50,6 +52,14 @@ func New(fp string) Filesystem {
 type fsys struct {
 	RootP  string
 	RootFS fs.FS
+}
+
+func (f *fsys) Stat(name string) (fs.FileInfo, error) {
+	rel, err := f.AsRel(name)
+	if err != nil {
+		return nil, err
+	}
+	return fs.Stat(f.RootFS, rel)
 }
 
 func (f *fsys) Create(name string) (*os.File, error) {

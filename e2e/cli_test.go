@@ -26,14 +26,13 @@ import (
 	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
 
 	"github.com/skiff-sh/skiff/pkg/collection"
-	"github.com/skiff-sh/skiff/pkg/fileutil"
 	"github.com/skiff-sh/skiff/pkg/interact"
 	"github.com/skiff-sh/skiff/pkg/protoencode"
 	"github.com/skiff-sh/skiff/pkg/testutil"
 )
 
 type CliTestSuite struct {
-	Suite
+	testutil.Suite
 }
 
 func (c *CliTestSuite) TestHelp() {
@@ -104,8 +103,8 @@ func (c *CliTestSuite) TestBuild() {
 	type params struct {
 		// The directory housing the cloned example folder.
 		ExampleDir    fs.FS
-		ExampleFS     fileutil.MapFS
-		BuildOutputFS fileutil.MapFS
+		ExampleFS     testutil.MapFS
+		BuildOutputFS testutil.MapFS
 		Actual        *BuildOutput
 	}
 
@@ -201,7 +200,7 @@ func (c *CliTestSuite) TestBuild() {
 				return
 			}
 
-			actualFS := fileutil.FlatMapFS(os.DirFS(build.OutputDir))
+			actualFS := testutil.FlatMapFS(os.DirFS(build.OutputDir))
 			actual, ok := c.unmarshalBuildOutput(actualFS)
 			if !ok {
 				return
@@ -210,7 +209,7 @@ func (c *CliTestSuite) TestBuild() {
 			exaFS := os.DirFS(exaDir)
 			v.Expected(&params{
 				ExampleDir:    exaFS,
-				ExampleFS:     fileutil.FlatMapFS(exaFS),
+				ExampleFS:     testutil.FlatMapFS(exaFS),
 				BuildOutputFS: actualFS,
 				Actual:        actual,
 			})
@@ -407,7 +406,7 @@ type BuildOutput struct {
 	Packages map[string]*v1alpha1.Package
 }
 
-func (c *CliTestSuite) unmarshalBuildOutput(f fileutil.MapFS) (*BuildOutput, bool) {
+func (c *CliTestSuite) unmarshalBuildOutput(f testutil.MapFS) (*BuildOutput, bool) {
 	out := &BuildOutput{
 		Registry: new(v1alpha1.Registry),
 		Packages: make(map[string]*v1alpha1.Package),

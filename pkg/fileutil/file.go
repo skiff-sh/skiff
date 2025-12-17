@@ -59,39 +59,6 @@ func CallerPath(skip int) string {
 	return file
 }
 
-type File struct {
-	Data  []byte
-	IsDir bool
-}
-
-type MapFS map[string]File
-
-// FlatMapFS converts a fs.FS into a map of flat paths to their contents. Similar to [fstest.MapFS].
-func FlatMapFS(f fs.FS) MapFS {
-	out := MapFS{}
-
-	_ = fs.WalkDir(f, ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			//nolint:nilerr // only testing.
-			return nil
-		}
-
-		b, err := fs.ReadFile(f, path)
-		if err != nil {
-			//nolint:nilerr // only testing.
-			return nil
-		}
-
-		out[path] = File{
-			Data:  b,
-			IsDir: d.IsDir(),
-		}
-
-		return nil
-	})
-	return out
-}
-
 // SplitFilename splits a filename into base name and extension.
 // For example: "asd.txt" → ("asd", "txt").
 func SplitFilename(filename string) (base, ext string) {
