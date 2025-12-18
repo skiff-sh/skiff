@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/x/exp/teatest v0.0.0-20251211193724-5cb91212b903
 	github.com/charmbracelet/x/term v0.2.2
 	github.com/google/go-cmp v0.7.0
-	github.com/skiff-sh/api/go v0.0.0-20251209235135-958b4a9deb61
+	github.com/skiff-sh/api/go v0.0.0-20251218234142-a54909c7434e
 	github.com/skiff-sh/config v0.0.0-20250921220812-93e59348136e
 	github.com/skiff-sh/sdk-go v0.0.0-20251211011239-f944c99006d7
 	github.com/stretchr/testify v1.11.1
@@ -46,6 +46,8 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/google/cel-go v0.26.1 // indirect
+	github.com/google/jsonschema-go v0.3.0 // indirect
+	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/parsers/json v1.0.0 // indirect
 	github.com/knadh/koanf/parsers/yaml v1.1.0 // indirect
@@ -60,15 +62,19 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/modelcontextprotocol/go-sdk v1.1.0 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/stoewer/go-strcase v1.3.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
+	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251111163417-95abcf5c77ba // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251111163417-95abcf5c77ba // indirect

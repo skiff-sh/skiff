@@ -4,6 +4,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/skiff-sh/api/go v0.0.0-20251209235135-958b4a9deb61 h1:0FoWfTI8Iw1k83hu9f57fn6ntnDD/i0B9htTT3xoRN8=
 github.com/skiff-sh/api/go v0.0.0-20251209235135-958b4a9deb61/go.mod h1:BmmyarVPe5+g2YL40UtT104v08yCyoE0JDaxpPqK+sE=
+github.com/skiff-sh/api/go v0.0.0-20251218234142-a54909c7434e h1:Yr0Iw/y4z0OH/p70kmbze3LYzF+aOxY73ckOLplEcWQ=
+github.com/skiff-sh/api/go v0.0.0-20251218234142-a54909c7434e/go.mod h1:BmmyarVPe5+g2YL40UtT104v08yCyoE0JDaxpPqK+sE=
 github.com/skiff-sh/sdk-go v0.0.0-20251211011239-f944c99006d7 h1:PPr83FgBl8l8Yz5aNCzlrDUrxCHSFQU0dCJb2KQjtrs=
 github.com/skiff-sh/sdk-go v0.0.0-20251211011239-f944c99006d7/go.mod h1:8C0nnkx9pLIuV0CU7qeqkFs00UoT622ZD594ejIGpHg=
 github.com/stretchr/objx v0.5.2 h1:xuMeJ0Sdp5ZMRXx/aWO6RZxdr3beISkG5/G/aIRr3pY=

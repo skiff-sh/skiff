@@ -13,6 +13,8 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
+	github.com/skiff-sh/api/go v0.0.0-20251218234142-a54909c7434e // indirect
+	github.com/skiff-sh/sdk-go v0.0.0-20251211011239-f944c99006d7 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
