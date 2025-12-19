@@ -1,0 +1,32 @@
+{
+  "$defs": {
+    "skiff.plugin.v1alpha1.RequestMetadata.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "package": {
+          "description": "The name of the package that initiated the request.",
+          "type": "string"
+        },
+        "path": {
+          "description": "The path of the original plugin file in the package.",
+          "type": "string"
+        },
+        "target": {
+          "description": "The intended target specified in the package.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "package",
+        "target",
+        "path"
+      ],
+      "title": "Request Metadata",
+      "type": "object"
+    }
+  },
+  "$id": "skiff.plugin.v1alpha1.RequestMetadata.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/skiff.plugin.v1alpha1.RequestMetadata.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

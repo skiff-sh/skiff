@@ -1,0 +1,27 @@
+{
+  "$defs": {
+    "skiff.registry.v1alpha1.PackagePermissions.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "plugin": {
+          "description": "Permissions for all plugins in the package.",
+          "items": {
+            "enum": [
+              "cwd_ro",
+              "all"
+            ],
+            "title": "Plugin",
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Package Permissions",
+      "type": "object"
+    }
+  },
+  "$id": "skiff.registry.v1alpha1.PackagePermissions.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/skiff.registry.v1alpha1.PackagePermissions.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

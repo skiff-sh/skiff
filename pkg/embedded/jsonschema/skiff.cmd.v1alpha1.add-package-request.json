@@ -1,0 +1,44 @@
+{
+  "$defs": {
+    "skiff.cmd.v1alpha1.AddPackageRequest.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "The request data needed to add a package.",
+      "properties": {
+        "packages": {
+          "description": "The list of file paths to packages or http(s) URLs. HTTP(s) URLs must start with \"http(s)://\", otherwise, it's treated as a filepath.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "plugin_permissions": {
+          "description": "The list of permissions available to plugins that are called within the packages. If none are specified, no permissions are granted to the user's system.",
+          "items": {
+            "enum": [
+              "cwd_ro",
+              "all"
+            ],
+            "title": "Plugin",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "root": {
+          "description": "An absolute filepath to the project root. This is used as the root directory to place all files within.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "root"
+      ],
+      "title": "Add Package Request",
+      "type": "object"
+    }
+  },
+  "$id": "skiff.cmd.v1alpha1.AddPackageRequest.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/skiff.cmd.v1alpha1.AddPackageRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
+

@@ -1,0 +1,22 @@
+{
+  "$defs": {
+    "skiff.cmd.v1alpha1.ListPackagesRequest.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "packages": {
+          "description": "The URLs or local file paths to packages.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "List Packages Request",
+      "type": "object"
+    }
+  },
+  "$id": "skiff.cmd.v1alpha1.ListPackagesRequest.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/skiff.cmd.v1alpha1.ListPackagesRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
