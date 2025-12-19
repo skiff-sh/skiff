@@ -1,10 +1,19 @@
 {
   "$defs": {
+    "google.protobuf.Struct.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Struct",
+      "type": "object"
+    },
     "skiff.cmd.v1alpha1.AddPackageRequest.jsonschema.strict.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
-      "description": "The request data needed to add a package.",
+      "description": "Generates all files within the package and returns the diffs that would result from them being written. Packages hold both templates and WASM plugins that are\n executed locally to edit local files.",
       "properties": {
+        "data": {
+          "$ref": "#/$defs/google.protobuf.Struct.jsonschema.strict.json",
+          "description": "The"
+        },
         "packages": {
           "description": "The list of file paths to packages or http(s) URLs. HTTP(s) URLs must start with \"http(s)://\", otherwise, it's treated as a filepath.",
           "items": {
