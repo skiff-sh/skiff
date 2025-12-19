@@ -12,7 +12,7 @@
       "properties": {
         "data": {
           "$ref": "#/$defs/google.protobuf.Struct.jsonschema.strict.json",
-          "description": "The"
+          "description": "The data needed by the package. The schema is retrieved via the \"view packages\" call."
         },
         "packages": {
           "description": "The list of file paths to packages or http(s) URLs. HTTP(s) URLs must start with \"http(s)://\", otherwise, it's treated as a filepath.",
