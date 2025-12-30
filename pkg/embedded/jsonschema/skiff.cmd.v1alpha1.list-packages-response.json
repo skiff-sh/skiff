@@ -8,6 +8,10 @@
           "description": "A short description of the package.",
           "type": "string"
         },
+        "json_schema": {
+          "description": "The schema for the data required to add this package.",
+          "type": "string"
+        },
         "name": {
           "description": "The name of the file with the extension.",
           "type": "string"
@@ -34,7 +38,8 @@
         "name",
         "type",
         "registry",
-        "path"
+        "path",
+        "json_schema"
       ],
       "title": "Package Preview",
       "type": "object"

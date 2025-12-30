@@ -33,14 +33,14 @@
           },
           "type": "array"
         },
-        "root": {
-          "description": "An absolute filepath to the project root. This is used as the root directory to place all files within.",
+        "project_root": {
+          "description": "An absolute filepath to the project root. This is used as the root for all plugin file reads and the base reference path for all file outputs.",
           "minLength": 1,
           "type": "string"
         }
       },
       "required": [
-        "root"
+        "project_root"
       ],
       "title": "Add Package Request",
       "type": "object"
