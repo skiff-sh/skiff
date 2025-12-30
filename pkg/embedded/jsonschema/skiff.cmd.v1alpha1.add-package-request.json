@@ -1,9 +1,8 @@
 {
   "$defs": {
-    "google.protobuf.Struct.jsonschema.strict.json": {
+    "google.protobuf.Value.jsonschema.strict.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "title": "Struct",
-      "type": "object"
+      "title": "Value"
     },
     "skiff.cmd.v1alpha1.AddPackageRequest.jsonschema.strict.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -11,18 +10,22 @@
       "description": "Generates all files within the package and returns the diffs that would result from them being written. Packages hold both templates and WASM plugins that are\n executed locally to edit local files.",
       "properties": {
         "data": {
-          "$ref": "#/$defs/google.protobuf.Struct.jsonschema.strict.json",
-          "description": "The data needed by the package. The schema is retrieved via the \"view packages\" call."
-        },
-        "packages": {
-          "description": "The list of file paths to packages or http(s) URLs. HTTP(s) URLs must start with \"http(s)://\", otherwise, it's treated as a filepath.",
-          "items": {
+          "additionalProperties": {
+            "$ref": "#/$defs/google.protobuf.Value.jsonschema.strict.json"
+          },
+          "description": "The data needed by the package. Should be a simple map of the field name to the value.",
+          "propertyNames": {
             "type": "string"
           },
-          "type": "array"
+          "type": "object"
+        },
+        "package": {
+          "description": "The file path or http(s) URLs to the package. HTTP(s) URLs must start with \"http(s)://\", otherwise, it's treated as a filepath.",
+          "minLength": 1,
+          "type": "string"
         },
         "plugin_permissions": {
-          "description": "The list of permissions available to plugins that are called within the packages. If none are specified, no permissions are granted to the user's system.",
+          "description": "The list of permissions available to plugins that are called within the package. If none are specified, no permissions are granted to the user's system.",
           "items": {
             "enum": [
               "cwd_ro",
@@ -40,7 +43,8 @@
         }
       },
       "required": [
-        "project_root"
+        "project_root",
+        "package"
       ],
       "title": "Add Package Request",
       "type": "object"
