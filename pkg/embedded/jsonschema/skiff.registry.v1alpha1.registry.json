@@ -157,10 +157,6 @@
           "minLength": 1,
           "type": "string"
         },
-        "permissions": {
-          "$ref": "#/$defs/skiff.registry.v1alpha1.PackagePermissions.jsonschema.strict.json",
-          "description": "Any needed permissions for your package to function."
-        },
         "schema": {
           "$ref": "#/$defs/skiff.registry.v1alpha1.Schema.jsonschema.strict.json",
           "description": "If a field does not have a default, it is marked as required."
@@ -171,26 +167,6 @@
         "description"
       ],
       "title": "Package",
-      "type": "object"
-    },
-    "skiff.registry.v1alpha1.PackagePermissions.jsonschema.strict.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
-      "properties": {
-        "plugin": {
-          "description": "Permissions for all plugins in the package.",
-          "items": {
-            "enum": [
-              "cwd_ro",
-              "all"
-            ],
-            "title": "Plugin",
-            "type": "string"
-          },
-          "type": "array"
-        }
-      },
-      "title": "Package Permissions",
       "type": "object"
     },
     "skiff.registry.v1alpha1.Registry.jsonschema.strict.json": {

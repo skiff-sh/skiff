@@ -24,18 +24,6 @@
           "minLength": 1,
           "type": "string"
         },
-        "plugin_permissions": {
-          "description": "The list of permissions available to plugins that are called within the package. If none are specified, no permissions are granted to the user's system.",
-          "items": {
-            "enum": [
-              "cwd_ro",
-              "all"
-            ],
-            "title": "Plugin",
-            "type": "string"
-          },
-          "type": "array"
-        },
         "project_root": {
           "description": "An absolute filepath to the project root. This is used as the root for all plugin file reads and the base reference path for all file outputs.",
           "minLength": 1,
