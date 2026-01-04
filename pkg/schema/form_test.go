@@ -198,7 +198,7 @@ func (f *FormTestSuite) TestFormField() {
 				return
 			}
 
-			sch, err := NewSchema(ap)
+			sch, err := New(ap)
 			if v.ExpectedNewSchemaErr != "" || !f.NoError(err) {
 				f.ErrorContains(err, v.ExpectedNewSchemaErr)
 				return

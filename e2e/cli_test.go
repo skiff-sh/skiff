@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -118,6 +119,7 @@ func (c *CliTestSuite) TestBuild() {
 	}
 
 	oldPathLooker := execcmd.DefaultPathLooker
+	oldEnvs := os.Environ()
 	tests := map[string]test{
 		"go controller all files present": {
 			ExampleName: "go-fiber-controller",
@@ -136,6 +138,10 @@ func (c *CliTestSuite) TestBuild() {
 		"build with managed go CLI": {
 			ExampleName: "go-fiber-controller",
 			Setup: func() {
+				// We assume the user has home.
+				home := os.Getenv("HOME")
+				os.Clearenv()
+				_ = os.Setenv("HOME", home)
 				execcmd.DefaultPathLooker = execcmd.PathLookerFunc(func(fi string) (string, error) {
 					if fi == "go" || fi == "go.exe" {
 						return "", exec.ErrNotFound
@@ -145,6 +151,12 @@ func (c *CliTestSuite) TestBuild() {
 			},
 			Cleanup: func(buildDir string) {
 				execcmd.DefaultPathLooker = oldPathLooker
+				for _, pair := range oldEnvs {
+					// Environ() returns strings in "KEY=VALUE" format
+					kv := strings.SplitN(pair, "=", 2)
+					_ = os.Setenv(kv[0], kv[1])
+				}
+
 				// For some reason, go deps are installed protected. maybe it's gvm? not 100% sure if this is consistent on linux or windows.
 				out, err := exec.CommandContext(c.T().Context(), "chmod", "-R", "u+w", buildDir).CombinedOutput()
 				if err != nil {
@@ -242,7 +254,6 @@ func (c *CliTestSuite) TestAdd() {
 				return []string{"--root", b.RootDir, filepath.Join(b.OutputDir, "create-http-route.json")}
 			},
 			Inputs: []testutil.TeaInputs{
-				testutil.Inputs(tea.KeyLeft, tea.KeyEnter), // Grant access.
 				testutil.Inputs(
 					"derp", tea.KeyEnter, // provide the name
 					tea.KeyDown, tea.KeyEnter, // provide the method
@@ -269,30 +280,12 @@ func (c *CliTestSuite) TestAdd() {
 				return []string{
 					"--root",
 					b.RootDir,
-					"-p",
-					"all",
 					"--non-i",
 					filepath.Join(b.OutputDir, "create-http-route.json"),
 				}
 			},
 			Expected: func(p *output) {
 				c.ErrorContains(p.Err, "Required flags")
-			},
-		},
-		"no op if access is denied": {
-			Args: func(b *BuildCmdOutput) []string {
-				return []string{"--root", b.RootDir, filepath.Join(b.OutputDir, "create-http-route.json")}
-			},
-			Inputs: []testutil.TeaInputs{
-				testutil.Inputs(tea.KeyEnter),
-			},
-			Expected: func(p *output) {
-				if !c.NoError(p.Err) {
-					return
-				}
-
-				fp := filepath.Join("controller", "controller.go")
-				c.EqualFiles(p.OriginalExample, fp, p.BuildRoot, fp)
 			},
 		},
 	}

@@ -152,7 +152,7 @@ func (f *FlagsTestSuite) TestFieldToCLIFlag() {
 
 	for desc, v := range tests {
 		f.Run(desc, func() {
-			sch, err := NewSchema(&v1alpha1.Schema{Fields: []*v1alpha1.Field{v.Given}})
+			sch, err := New(&v1alpha1.Schema{Fields: []*v1alpha1.Field{v.Given}})
 			if !f.NoError(err) {
 				return
 			}
