@@ -9,10 +9,14 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/x/exp/teatest v0.0.0-20251211193724-5cb91212b903
 	github.com/charmbracelet/x/term v0.2.2
+	github.com/eddieowens/opts v0.1.0
 	github.com/google/go-cmp v0.7.0
-	github.com/skiff-sh/api/go v0.0.0-20251218234142-a54909c7434e
+	github.com/google/jsonschema-go v0.4.1
+	github.com/hexops/gotextdiff v1.0.3
+	github.com/modelcontextprotocol/go-sdk v1.1.0
+	github.com/skiff-sh/api/go v0.0.0-20260103061752-0392f19b71e4
 	github.com/skiff-sh/config v0.0.0-20250921220812-93e59348136e
-	github.com/skiff-sh/sdk-go v0.0.0-20251211011239-f944c99006d7
+	github.com/skiff-sh/sdk-go v0.0.0-20251218234652-cc4f59cad08b
 	github.com/stretchr/testify v1.11.1
 	github.com/tetratelabs/wazero v1.10.1
 	github.com/urfave/cli/v3 v3.6.1
@@ -40,14 +44,11 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/eddieowens/opts v0.1.0 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/google/cel-go v0.26.1 // indirect
-	github.com/google/jsonschema-go v0.3.0 // indirect
-	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/parsers/json v1.0.0 // indirect
 	github.com/knadh/koanf/parsers/yaml v1.1.0 // indirect
@@ -62,13 +63,12 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/modelcontextprotocol/go-sdk v1.1.0 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/sergi/go-diff v1.4.0 // indirect
+	github.com/spf13/cast v1.10.0 // indirect
 	github.com/stoewer/go-strcase v1.3.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect

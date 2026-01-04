@@ -67,3 +67,11 @@ func NewValue(a any) *structpb.Value {
 	v, _ := structpb.NewValue(a)
 	return v
 }
+
+type Number interface {
+	constraints.Integer | constraints.Float
+}
+
+func ToFloat64[T Number](t T) float64 {
+	return float64(t)
+}

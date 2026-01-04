@@ -3,7 +3,7 @@ package schema
 import pluginv1alpha1 "github.com/skiff-sh/api/go/skiff/plugin/v1alpha1"
 
 type DataSource interface {
-	AddPackageEntry(packageName string, v Entry)
+	AddPackageEntries(packageName string, v ...Entry)
 	Package(name string) PackageDataSource
 	HasPackageEntry(packageName string, v Entry) bool
 }
@@ -31,12 +31,15 @@ func (d *dataSource) Package(name string) PackageDataSource {
 	return d.Map[name]
 }
 
-func (d *dataSource) AddPackageEntry(packageName string, v Entry) {
-	pkg := d.Map[packageName]
-	if pkg != nil {
-		pkg.AddEntry(v)
-	} else {
-		d.Map[packageName] = NewPackageSource(v)
+func (d *dataSource) AddPackageEntries(packageName string, entries ...Entry) {
+	for i := range entries {
+		v := entries[i]
+		pkg := d.Map[packageName]
+		if pkg != nil {
+			pkg.AddEntry(v)
+		} else {
+			d.Map[packageName] = NewPackageSource(v)
+		}
 	}
 }
 
