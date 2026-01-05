@@ -1,35 +1,77 @@
 {
-  "$defs": {
-    "skiff.plugin.v1alpha1.Request.jsonschema.strict.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
-      "description": "A single object housing all supported requests. All corresponding responses are of the same name on the Response object.",
-      "properties": {
-        "data": {
-          "additionalProperties": {
-            "$ref": "#/$defs/skiff.plugin.v1alpha1.Value.jsonschema.strict.json"
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A single object housing all supported requests. All corresponding responses are of the same name on the Response object.",
+  "properties": {
+    "data": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "bool": {
+            "type": "boolean"
           },
-          "description": "The schema data by name specified by the user. All available fields can be found in the \"schema\" field of the package.",
-          "propertyNames": {
+          "list": {
+            "additionalProperties": false,
+            "properties": {
+              "numbers": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "enum": [
+                        "Infinity",
+                        "-Infinity",
+                        "NaN"
+                      ],
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "strings": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "title": "List",
+            "type": "object"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "enum": [
+                  "Infinity",
+                  "-Infinity",
+                  "NaN"
+                ],
+                "type": "string"
+              }
+            ]
+          },
+          "string": {
             "type": "string"
-          },
-          "type": "object"
+          }
         },
-        "metadata": {
-          "$ref": "#/$defs/skiff.plugin.v1alpha1.RequestMetadata.jsonschema.strict.json",
-          "description": "Metadata for the request."
-        },
-        "write_file": {
-          "$ref": "#/$defs/skiff.plugin.v1alpha1.WriteFileRequest.jsonschema.strict.json",
-          "description": "Write a file to the user's machine."
-        }
+        "title": "Value",
+        "type": "object"
       },
-      "title": "Request",
+      "description": "The schema data by name specified by the user. All available fields can be found in the \"schema\" field of the package.",
+      "propertyNames": {
+        "type": "string"
+      },
       "type": "object"
     },
-    "skiff.plugin.v1alpha1.RequestMetadata.jsonschema.strict.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "metadata": {
       "additionalProperties": false,
+      "description": "Metadata for the request.",
       "properties": {
         "package": {
           "description": "The name of the package that initiated the request.",
@@ -52,72 +94,7 @@
       "title": "Request Metadata",
       "type": "object"
     },
-    "skiff.plugin.v1alpha1.Value.List.jsonschema.strict.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
-      "properties": {
-        "numbers": {
-          "items": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "enum": [
-                  "Infinity",
-                  "-Infinity",
-                  "NaN"
-                ],
-                "type": "string"
-              }
-            ]
-          },
-          "type": "array"
-        },
-        "strings": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        }
-      },
-      "title": "List",
-      "type": "object"
-    },
-    "skiff.plugin.v1alpha1.Value.jsonschema.strict.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
-      "properties": {
-        "bool": {
-          "type": "boolean"
-        },
-        "list": {
-          "$ref": "#/$defs/skiff.plugin.v1alpha1.Value.List.jsonschema.strict.json"
-        },
-        "number": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "enum": [
-                "Infinity",
-                "-Infinity",
-                "NaN"
-              ],
-              "type": "string"
-            }
-          ]
-        },
-        "string": {
-          "type": "string"
-        }
-      },
-      "title": "Value",
-      "type": "object"
-    },
-    "skiff.plugin.v1alpha1.WriteFileRequest.jsonschema.strict.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "write_file": {
       "additionalProperties": false,
       "description": "Write a file to the user's machine.",
       "properties": {},
@@ -125,7 +102,6 @@
       "type": "object"
     }
   },
-  "$id": "skiff.plugin.v1alpha1.Request.jsonschema.strict.bundle.json",
-  "$ref": "#/$defs/skiff.plugin.v1alpha1.Request.jsonschema.strict.json",
-  "$schema": "https://json-schema.org/draft/2020-12/schema"
+  "title": "Request",
+  "type": "object"
 }

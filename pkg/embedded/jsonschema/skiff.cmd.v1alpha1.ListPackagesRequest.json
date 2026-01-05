@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "List all packages within a set of registries. These packages do not include the contents of the files. To get more details about a package use the view package\n call.",
+  "properties": {
+    "registries": {
+      "description": "The URLs or local file paths to registries e.g. ./.skiff/registry.json.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "title": "List Packages Request",
+  "type": "object"
+}

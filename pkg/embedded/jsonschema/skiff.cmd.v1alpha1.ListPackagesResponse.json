@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "packages": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "description": "A short description of the package.",
+            "type": "string"
+          },
+          "json_schema": {
+            "description": "The schema for the data required to add this package.",
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the package.",
+            "type": "string"
+          },
+          "path": {
+            "description": "Either the http(s) URL or the local file path to add/view the package.",
+            "type": "string"
+          },
+          "registry": {
+            "description": "The registry that this package belongs to.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "registry",
+          "description",
+          "path",
+          "json_schema"
+        ],
+        "title": "Package Preview",
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "title": "List Packages Response",
+  "type": "object"
+}

@@ -1,33 +1,26 @@
 {
-  "$defs": {
-    "skiff.plugin.v1alpha1.Issue.jsonschema.strict.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
-      "properties": {
-        "level": {
-          "description": "The level of the issue. If set to error, the command fails.",
-          "enum": [
-            "LEVEL_UNSPECIFIED",
-            "LEVEL_WARN",
-            "LEVEL_ERROR"
-          ],
-          "title": "Level",
-          "type": "string"
-        },
-        "message": {
-          "description": "The message surfaced to the user.",
-          "type": "string"
-        }
-      },
-      "required": [
-        "level",
-        "message"
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "level": {
+      "description": "The level of the issue. If set to error, the command fails.",
+      "enum": [
+        "LEVEL_UNSPECIFIED",
+        "LEVEL_WARN",
+        "LEVEL_ERROR"
       ],
-      "title": "Issue",
-      "type": "object"
+      "title": "Level",
+      "type": "string"
+    },
+    "message": {
+      "description": "The message surfaced to the user.",
+      "type": "string"
     }
   },
-  "$id": "skiff.plugin.v1alpha1.Issue.jsonschema.strict.bundle.json",
-  "$ref": "#/$defs/skiff.plugin.v1alpha1.Issue.jsonschema.strict.json",
-  "$schema": "https://json-schema.org/draft/2020-12/schema"
+  "required": [
+    "level",
+    "message"
+  ],
+  "title": "Issue",
+  "type": "object"
 }

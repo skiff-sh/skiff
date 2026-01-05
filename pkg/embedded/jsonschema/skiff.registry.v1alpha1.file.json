@@ -1,9 +1,15 @@
 {
-  "$defs": {
-    "skiff.registry.v1alpha1.File.Source.jsonschema.strict.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "path": {
+      "description": "The path to the file relative to the root of the registry. The root of the registry is the directory housing your 'registry.json' file. Cannot be outside of the registry root.\n If the type is set to \"plugin\", this path must be to a WASM binary or a Go file (which will be compiled to WASM).",
+      "minLength": 1,
+      "type": "string"
+    },
+    "source": {
       "additionalProperties": false,
-      "description": "The source of the contents for this File. This does not need to be populated manually. All fields are mutually exclusive.",
+      "description": "The source for the contents of the file. This does not need to be set manually as it's populated by the \"skiff build\" command.",
       "properties": {
         "file_index": {
           "description": "The index of the file that contains the contents within the same package. This is useful for plugins as the contents\n can be large. It is better to have a single plugin that can handle multiple files than to have 1 unique plugin per\n file.",
@@ -24,44 +30,26 @@
       "title": "Source",
       "type": "object"
     },
-    "skiff.registry.v1alpha1.File.jsonschema.strict.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
-      "properties": {
-        "path": {
-          "description": "The path to the file relative to the root of the registry. The root of the registry is the directory housing your 'registry.json' file. Cannot be outside of the registry root.\n If the type is set to \"plugin\", this path must be to a WASM binary or a Go file (which will be compiled to WASM).",
-          "minLength": 1,
-          "type": "string"
-        },
-        "source": {
-          "$ref": "#/$defs/skiff.registry.v1alpha1.File.Source.jsonschema.strict.json",
-          "description": "The source for the contents of the file. This does not need to be set manually as it's populated by the \"skiff build\" command."
-        },
-        "target": {
-          "description": "The target path of the file relative to the root of the project. Accepts template parameters.",
-          "minLength": 1,
-          "type": "string"
-        },
-        "type": {
-          "description": "The type of the file. Defaults to file.",
-          "enum": [
-            "file",
-            "plugin"
-          ],
-          "title": "Type",
-          "type": "string"
-        }
-      },
-      "required": [
-        "path",
-        "target",
-        "type"
+    "target": {
+      "description": "The target path of the file relative to the root of the project. Accepts template parameters.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "type": {
+      "description": "The type of the file. Defaults to file.",
+      "enum": [
+        "file",
+        "plugin"
       ],
-      "title": "File",
-      "type": "object"
+      "title": "Type",
+      "type": "string"
     }
   },
-  "$id": "skiff.registry.v1alpha1.File.jsonschema.strict.bundle.json",
-  "$ref": "#/$defs/skiff.registry.v1alpha1.File.jsonschema.strict.json",
-  "$schema": "https://json-schema.org/draft/2020-12/schema"
+  "required": [
+    "path",
+    "target",
+    "type"
+  ],
+  "title": "File",
+  "type": "object"
 }

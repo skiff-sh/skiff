@@ -1,7 +1,11 @@
 {
-  "$defs": {
-    "skiff.plugin.v1alpha1.Value.List.jsonschema.strict.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bool": {
+      "type": "boolean"
+    },
+    "list": {
       "additionalProperties": false,
       "properties": {
         "numbers": {
@@ -32,40 +36,25 @@
       "title": "List",
       "type": "object"
     },
-    "skiff.plugin.v1alpha1.Value.jsonschema.strict.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
-      "properties": {
-        "bool": {
-          "type": "boolean"
+    "number": {
+      "anyOf": [
+        {
+          "type": "number"
         },
-        "list": {
-          "$ref": "#/$defs/skiff.plugin.v1alpha1.Value.List.jsonschema.strict.json"
-        },
-        "number": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "enum": [
-                "Infinity",
-                "-Infinity",
-                "NaN"
-              ],
-              "type": "string"
-            }
-          ]
-        },
-        "string": {
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
           "type": "string"
         }
-      },
-      "title": "Value",
-      "type": "object"
+      ]
+    },
+    "string": {
+      "type": "string"
     }
   },
-  "$id": "skiff.plugin.v1alpha1.Value.jsonschema.strict.bundle.json",
-  "$ref": "#/$defs/skiff.plugin.v1alpha1.Value.jsonschema.strict.json",
-  "$schema": "https://json-schema.org/draft/2020-12/schema"
+  "title": "Value",
+  "type": "object"
 }

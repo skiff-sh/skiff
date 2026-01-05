@@ -1,54 +1,40 @@
 {
-  "$defs": {
-    "skiff.plugin.v1alpha1.Issue.jsonschema.strict.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
-      "properties": {
-        "level": {
-          "description": "The level of the issue. If set to error, the command fails.",
-          "enum": [
-            "LEVEL_UNSPECIFIED",
-            "LEVEL_WARN",
-            "LEVEL_ERROR"
-          ],
-          "title": "Level",
-          "type": "string"
-        },
-        "message": {
-          "description": "The message surfaced to the user.",
-          "type": "string"
-        }
-      },
-      "required": [
-        "level",
-        "message"
-      ],
-      "title": "Issue",
-      "type": "object"
-    },
-    "skiff.plugin.v1alpha1.Response.jsonschema.strict.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
-      "description": "A single object housing all supported responses.",
-      "properties": {
-        "issues": {
-          "description": "If any issues are encountered, surface them to the user.",
-          "items": {
-            "$ref": "#/$defs/skiff.plugin.v1alpha1.Issue.jsonschema.strict.json"
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A single object housing all supported responses.",
+  "properties": {
+    "issues": {
+      "description": "If any issues are encountered, surface them to the user.",
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "level": {
+            "description": "The level of the issue. If set to error, the command fails.",
+            "enum": [
+              "LEVEL_UNSPECIFIED",
+              "LEVEL_WARN",
+              "LEVEL_ERROR"
+            ],
+            "title": "Level",
+            "type": "string"
           },
-          "type": "array"
+          "message": {
+            "description": "The message surfaced to the user.",
+            "type": "string"
+          }
         },
-        "write_file": {
-          "$ref": "#/$defs/skiff.plugin.v1alpha1.WriteFileResponse.jsonschema.strict.json",
-          "description": "The response body for the write_file request."
-        }
+        "required": [
+          "level",
+          "message"
+        ],
+        "title": "Issue",
+        "type": "object"
       },
-      "title": "Response",
-      "type": "object"
+      "type": "array"
     },
-    "skiff.plugin.v1alpha1.WriteFileResponse.jsonschema.strict.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "write_file": {
       "additionalProperties": false,
+      "description": "The response body for the write_file request.",
       "properties": {
         "contents": {
           "description": "The new contents of the file.",
@@ -63,7 +49,6 @@
       "type": "object"
     }
   },
-  "$id": "skiff.plugin.v1alpha1.Response.jsonschema.strict.bundle.json",
-  "$ref": "#/$defs/skiff.plugin.v1alpha1.Response.jsonschema.strict.json",
-  "$schema": "https://json-schema.org/draft/2020-12/schema"
+  "title": "Response",
+  "type": "object"
 }

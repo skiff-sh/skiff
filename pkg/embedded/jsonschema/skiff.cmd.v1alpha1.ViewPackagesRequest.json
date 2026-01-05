@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Get detailed information about a set of packages. Includes the contents of the files that the packages would add if add package was called.",
+  "properties": {
+    "packages": {
+      "description": "The URLs or local file paths to packages e.g. ./skiff/public/r/create-http-route.json",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "title": "View Packages Request",
+  "type": "object"
+}
