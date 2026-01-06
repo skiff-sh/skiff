@@ -3,6 +3,11 @@
   "additionalProperties": false,
   "description": "List all packages within a set of registries. These packages do not include the contents of the files. To get more details about a package use the view package\n call.",
   "properties": {
+    "project_root": {
+      "description": "The absolute path to the root of the user's project. Should always be specified to provide appropriate context.",
+      "minLength": 1,
+      "type": "string"
+    },
     "registries": {
       "description": "The URLs or local file paths to registries e.g. ./.skiff/registry.json.",
       "items": {
@@ -11,6 +16,9 @@
       "type": "array"
     }
   },
+  "required": [
+    "project_root"
+  ],
   "title": "List Packages Request",
   "type": "object"
 }
