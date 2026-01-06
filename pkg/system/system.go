@@ -3,10 +3,6 @@ package system
 import (
 	"os"
 	"sync"
-
-	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
-
-	"github.com/skiff-sh/skiff/pkg/accesscontrol"
 )
 
 var (
@@ -42,36 +38,15 @@ type System interface {
 	CWD() string
 }
 
-// Mediator provides the capabilities of the System but mediated by a policy.
-type Mediator interface {
-	MediatedSystem(policy *accesscontrol.PluginAccessPolicy) System
-}
-
-// NewMediator constructor for Mediator.
-func NewMediator() Mediator {
-	out := &mediator{}
-
-	return out
-}
-
-type mediator struct {
-}
-
-func (m *mediator) MediatedSystem(policy *accesscontrol.PluginAccessPolicy) System {
-	return &system{
-		Policy: policy,
-	}
+func New() System {
+	return &system{}
 }
 
 type system struct {
-	Policy     *accesscontrol.PluginAccessPolicy
 	WorkingDir string
 }
 
 func (s *system) CWD() string {
-	if s.Policy.Authorize(v1alpha1.PackagePermissions_cwd_ro) {
-		wd, _ := Getwd()
-		return wd
-	}
-	return ""
+	wd, _ := Getwd()
+	return wd
 }

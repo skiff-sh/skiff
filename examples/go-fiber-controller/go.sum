@@ -17,10 +17,12 @@ github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWE
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/mattn/go-runewidth v0.0.19 h1:v++JhqYnZuu5jSKrk9RbgF5v4CGUjqRfBm05byFGLdw=
 github.com/mattn/go-runewidth v0.0.19/go.mod h1:XBkDxAl56ILZc9knddidhrOlY5R/pDhgLpndooCuJAs=
-github.com/skiff-sh/api/go v0.0.0-20251218234142-a54909c7434e h1:Yr0Iw/y4z0OH/p70kmbze3LYzF+aOxY73ckOLplEcWQ=
-github.com/skiff-sh/api/go v0.0.0-20251218234142-a54909c7434e/go.mod h1:BmmyarVPe5+g2YL40UtT104v08yCyoE0JDaxpPqK+sE=
-github.com/skiff-sh/sdk-go v0.0.0-20251211011239-f944c99006d7 h1:PPr83FgBl8l8Yz5aNCzlrDUrxCHSFQU0dCJb2KQjtrs=
-github.com/skiff-sh/sdk-go v0.0.0-20251211011239-f944c99006d7/go.mod h1:8C0nnkx9pLIuV0CU7qeqkFs00UoT622ZD594ejIGpHg=
+github.com/skiff-sh/api/go v0.0.0-20260102051110-0a5134a73c5d h1:MYnA5/uyViLRoRoDwNVo2ICLALQUCnTsfmMjhkSWMqc=
+github.com/skiff-sh/api/go v0.0.0-20260102051110-0a5134a73c5d/go.mod h1:BmmyarVPe5+g2YL40UtT104v08yCyoE0JDaxpPqK+sE=
+github.com/skiff-sh/api/go v0.0.0-20260103061752-0392f19b71e4 h1:7kgiy2UKgOmwRmyCkHm/+QMPSfqV+yvV18z+DvM8NMY=
+github.com/skiff-sh/api/go v0.0.0-20260103061752-0392f19b71e4/go.mod h1:BmmyarVPe5+g2YL40UtT104v08yCyoE0JDaxpPqK+sE=
+github.com/skiff-sh/sdk-go v0.0.0-20251218234652-cc4f59cad08b h1:PFlJL/EGaRc976HK5PFhJ7B0ZIVYjIyisutI+GO8YRM=
+github.com/skiff-sh/sdk-go v0.0.0-20251218234652-cc4f59cad08b/go.mod h1:Al8g6JDIguJ3eqEd8HW4Dqt748eSzs8fuLuobvoo8H0=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.51.0 h1:8b30A5JlZ6C7AS81RsWjYMQmrZG6feChmgAolCl1SqA=

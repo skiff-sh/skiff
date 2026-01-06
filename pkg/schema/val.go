@@ -1,14 +1,23 @@
 package schema
 
 import (
+	"errors"
+
 	pluginv1alpha1 "github.com/skiff-sh/api/go/skiff/plugin/v1alpha1"
 	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/config/ptr"
+	"github.com/spf13/cast"
 
 	"github.com/skiff-sh/skiff/pkg/collection"
 	"github.com/skiff-sh/skiff/pkg/fields"
 )
 
+// Value operates similar to the structpb.Value type but is restricted to a subset of values:
+// * float64
+// * bool
+// * string
+// * []string
+// * []float64.
 type Value interface {
 	Any() any
 	Plugin() *pluginv1alpha1.Value
@@ -20,6 +29,8 @@ type Value interface {
 	Type() v1alpha1.Field_Type
 	Items() *v1alpha1.Field_Type
 }
+
+var ErrUnsupportedType = errors.New("invalid type")
 
 type PrimitiveType interface {
 	string | float64 | bool
@@ -33,6 +44,33 @@ type ValueType interface {
 	PrimitiveType | SliceType
 }
 
+func NewVal(v any) (Value, error) {
+	var t v1alpha1.Field_Type
+	var itemsTyp *v1alpha1.Field_Type
+
+	switch v.(type) {
+	case string:
+		t = v1alpha1.Field_string
+	case bool:
+		t = v1alpha1.Field_bool
+	case float64, float32, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, complex64, complex128, uintptr:
+		t = v1alpha1.Field_number
+		v = cast.ToFloat64(v)
+	case []string:
+		t = v1alpha1.Field_array
+		itemsTyp = ptr.Ptr(v1alpha1.Field_string)
+	case []float64, []float32, []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []complex64, []complex128, []uintptr:
+		t = v1alpha1.Field_number
+		itemsTyp = ptr.Ptr(v1alpha1.Field_number)
+		v = cast.ToFloat64Slice(v)
+	default:
+		return nil, ErrUnsupportedType
+	}
+
+	return NewValidatedVal(v, t, itemsTyp), nil
+}
+
+// NewValidatedValFromField is a convenience func for NewValidatedVal.
 func NewValidatedValFromField(val any, f *v1alpha1.Field) Value {
 	var items *v1alpha1.Field_Type
 	if f.GetItems() != nil {
