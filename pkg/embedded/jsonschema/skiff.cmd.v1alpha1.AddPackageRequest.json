@@ -17,15 +17,9 @@
       "description": "The file path or http(s) URLs to the package. HTTP(s) URLs must start with \"http(s)://\", otherwise, it's treated as a filepath.",
       "minLength": 1,
       "type": "string"
-    },
-    "project_root": {
-      "description": "An absolute filepath to the project root. This is used as the root for all plugin file reads and the base reference path for all file outputs.",
-      "minLength": 1,
-      "type": "string"
     }
   },
   "required": [
-    "project_root",
     "package"
   ],
   "title": "Add Package Request",
