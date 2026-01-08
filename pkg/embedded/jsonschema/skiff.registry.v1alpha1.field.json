@@ -2,6 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "$schema": {
+      "type": "string"
+    },
     "default": {
       "description": "The default value. If set, the field will be marked as optional. If the enum field is set, this field must be one of the enum values.",
       "title": "Value"

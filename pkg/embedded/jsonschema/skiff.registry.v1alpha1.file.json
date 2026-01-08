@@ -2,6 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "$schema": {
+      "type": "string"
+    },
     "path": {
       "description": "The path to the file relative to the root of the registry. The root of the registry is the directory housing your 'registry.json' file. Cannot be outside of the registry root.\n If the type is set to \"plugin\", this path must be to a WASM binary or a Go file (which will be compiled to WASM).",
       "minLength": 1,

@@ -2,7 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Write a file to the user's machine.",
-  "properties": {},
+  "properties": {
+    "$schema": {
+      "type": "string"
+    }
+  },
   "title": "Write File Request",
   "type": "object"
 }

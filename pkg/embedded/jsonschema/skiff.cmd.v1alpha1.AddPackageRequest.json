@@ -3,6 +3,9 @@
   "additionalProperties": false,
   "description": "Generates all files within the package and returns the diffs that would result from them being written. Packages hold both templates and WASM plugins that are\n executed locally to edit local files.",
   "properties": {
+    "$schema": {
+      "type": "string"
+    },
     "data": {
       "additionalProperties": {
         "title": "Value"

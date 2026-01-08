@@ -3,6 +3,9 @@
   "additionalProperties": false,
   "description": "The response data for AddPackageRequest.",
   "properties": {
+    "$schema": {
+      "type": "string"
+    },
     "unified_diffs": {
       "description": "A list of file diffs that should be applied to the user's machine. These use the absolute path using the \"project_root\" field passed into the request.\n There is a single unified diff per file.",
       "items": {

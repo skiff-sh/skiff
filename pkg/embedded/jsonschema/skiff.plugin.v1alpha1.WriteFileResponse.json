@@ -2,6 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "$schema": {
+      "type": "string"
+    },
     "contents": {
       "description": "The new contents of the file.",
       "pattern": "^[A-Za-z0-9+/]*={0,2}$",
