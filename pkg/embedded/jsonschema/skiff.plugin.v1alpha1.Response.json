@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A single object housing all supported responses.",
+  "properties": {
+    "issues": {
+      "description": "If any issues are encountered, surface them to the user.",
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "level": {
+            "description": "The level of the issue. If set to error, the command fails.",
+            "enum": [
+              "LEVEL_UNSPECIFIED",
+              "LEVEL_WARN",
+              "LEVEL_ERROR"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "message": {
+            "description": "The message surfaced to the user.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "message"
+        ],
+        "title": "Issue",
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "write_file": {
+      "additionalProperties": false,
+      "description": "The response body for the write_file request.",
+      "properties": {
+        "contents": {
+          "description": "The new contents of the file.",
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contents"
+      ],
+      "title": "Write File Response",
+      "type": "object"
+    }
+  },
+  "title": "Response",
+  "type": "object"
+}

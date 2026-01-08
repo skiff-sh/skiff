@@ -3,9 +3,6 @@
   "additionalProperties": false,
   "description": "A single object housing all supported requests. All corresponding responses are of the same name on the Response object.",
   "properties": {
-    "$schema": {
-      "type": "string"
-    },
     "data": {
       "additionalProperties": {
         "additionalProperties": false,

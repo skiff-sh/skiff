@@ -3,9 +3,6 @@
   "additionalProperties": false,
   "description": "Get detailed information about a set of packages. Includes the contents of the files that the packages would add if add package was called.",
   "properties": {
-    "$schema": {
-      "type": "string"
-    },
     "packages": {
       "description": "The URLs or local file paths to packages e.g. ./skiff/public/r/create-http-route.json",
       "items": {

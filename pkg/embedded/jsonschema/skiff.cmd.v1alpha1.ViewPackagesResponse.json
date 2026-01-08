@@ -2,9 +2,6 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
-    "$schema": {
-      "type": "string"
-    },
     "packages": {
       "description": "Returns the entirety of the contents of the package. If the package contains a plugin file, the contents of the file are not returned as they are just WASM bytes.",
       "items": {

@@ -3,9 +3,6 @@
   "additionalProperties": false,
   "description": "List all packages within a set of registries. These packages do not include the contents of the files. To get more details about a package use the view package\n call.",
   "properties": {
-    "$schema": {
-      "type": "string"
-    },
     "project_root": {
       "description": "The absolute path to the root of the user's project. If no registries are provided, this should be populated to provide more context about the user's project.\n If registries is empty and this is not populated, the CWD is used.",
       "type": "string"

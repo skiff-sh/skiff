@@ -2,9 +2,6 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
-    "$schema": {
-      "type": "string"
-    },
     "package": {
       "description": "The name of the package that initiated the request.",
       "type": "string"
