@@ -20,15 +20,8 @@
             "additionalProperties": false,
             "description": "The source for the contents of the file. This does not need to be set manually as it's populated by the \"skiff build\" command.",
             "properties": {
-              "file_index": {
-                "description": "The index of the file that contains the contents within the same package. This is useful for plugins as the contents\n can be large. It is better to have a single plugin that can handle multiple files than to have 1 unique plugin per\n file.",
-                "maximum": 2147483647,
-                "minimum": -2147483648,
-                "type": "integer"
-              },
-              "raw": {
-                "description": "The raw contents of the file. This field is set if the data is binary.",
-                "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+              "path": {
+                "description": "The contents of the file can be found at another path. Supports both HTTP(S), relative, and absolute unix file paths.\n If the path is relative, it is relative to the registry.json file.",
                 "type": "string"
               },
               "text": {
