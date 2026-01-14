@@ -134,6 +134,8 @@ github.com/skiff-sh/api/go v0.0.0-20260102051110-0a5134a73c5d h1:MYnA5/uyViLRoRo
 github.com/skiff-sh/api/go v0.0.0-20260102051110-0a5134a73c5d/go.mod h1:BmmyarVPe5+g2YL40UtT104v08yCyoE0JDaxpPqK+sE=
 github.com/skiff-sh/api/go v0.0.0-20260103061752-0392f19b71e4 h1:7kgiy2UKgOmwRmyCkHm/+QMPSfqV+yvV18z+DvM8NMY=
 github.com/skiff-sh/api/go v0.0.0-20260103061752-0392f19b71e4/go.mod h1:BmmyarVPe5+g2YL40UtT104v08yCyoE0JDaxpPqK+sE=
+github.com/skiff-sh/api/go v0.0.0-20260106041649-f21b568c480a h1:1c/zLUa0pODi5MbJ97jp8mUs9lxo2Rpp+Uts50r1Q8s=
+github.com/skiff-sh/api/go v0.0.0-20260106041649-f21b568c480a/go.mod h1:BmmyarVPe5+g2YL40UtT104v08yCyoE0JDaxpPqK+sE=
 github.com/skiff-sh/config v0.0.0-20250921220812-93e59348136e h1:08WdkwJndYkTiKFd9USQId6SV0z3yPoIALy28mcP+Wo=
 github.com/skiff-sh/config v0.0.0-20250921220812-93e59348136e/go.mod h1:wyev5UmLf9Tps6F4uWB0TPxZO4jxN3NRGFRdo7GaSdc=
 github.com/skiff-sh/sdk-go v0.0.0-20251218234652-cc4f59cad08b h1:PFlJL/EGaRc976HK5PFhJ7B0ZIVYjIyisutI+GO8YRM=

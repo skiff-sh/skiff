@@ -25,6 +25,7 @@ func NewJSONSchema(s *Schema) (*jsonschema.Schema, error) {
 			return nil, fmt.Errorf("field %s: %w", field.Proto.GetName(), err)
 		}
 		sch.Properties[field.Proto.GetName()] = fi
+		sch.Required = append(sch.Required, field.Proto.GetName())
 	}
 
 	return sch, nil
@@ -79,7 +80,7 @@ func NewJSONSchemaField(f *Field) (*jsonschema.Schema, error) {
 
 func formatValue(a any) []byte {
 	if a == nil {
-		return []byte("null")
+		return nil
 	}
 	switch typ := a.(type) {
 	case string:
@@ -97,7 +98,7 @@ func formatValue(a any) []byte {
 	case []float64:
 		return arrWriter(typ, fields.FormatFloat)
 	}
-	return []byte("null")
+	return nil
 }
 
 func arrWriter[S ~[]E, E any](s S, f func(v E) string) []byte {

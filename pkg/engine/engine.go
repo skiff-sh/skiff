@@ -4,15 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
-	"path"
-	"path/filepath"
 
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
 	cmdv1alpha1 "github.com/skiff-sh/api/go/skiff/cmd/v1alpha1"
 	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
+
+	"github.com/skiff-sh/skiff/pkg/fileutil"
 
 	"github.com/skiff-sh/skiff/pkg/bufferpool"
 
@@ -31,7 +30,7 @@ import (
 type Engine interface {
 	AddPackage(
 		ctx context.Context,
-		pkg *registry.LoadedPackage,
+		pkg *registry.CompiledPackage,
 		data schema.PackageDataSource,
 	) (*AddPackageResult, error)
 
@@ -73,13 +72,14 @@ type engine struct {
 
 func (e *engine) AddPackage(
 	ctx context.Context,
-	pkg *registry.LoadedPackage,
+	pkg *registry.CompiledPackage,
 	data schema.PackageDataSource,
 ) (*AddPackageResult, error) {
 	generator, err := registry.NewPackageGenerator(ctx, e.Compiler, e.System, e.TemplateFactory, pkg)
 	if err != nil {
 		return nil, err
 	}
+	defer generator.Close()
 
 	gen, err := generator.Generate(ctx, data)
 	if err != nil {
@@ -103,7 +103,7 @@ func (e *engine) AddPackage(
 			before = buff.String()
 		}
 
-		edits := myers.ComputeEdits(span.URIFromPath(fi.Path), before, string(fi.Content))
+		edits := myers.ComputeEdits(span.URIFromPath(fi.Path), before, fi.Content.String())
 		uni := gotextdiff.ToUnified(fi.Path, fi.Path, before, edits)
 		diff := &Diff{
 			UnifiedDiff: fmt.Append(nil, uni),
@@ -125,7 +125,7 @@ func (e *engine) ListPackages(
 		return nil, fmt.Errorf("registry %s not found: %w", registryPath, err)
 	}
 
-	ha := newHandler(registryPath)
+	ha := fileutil.NewPath(registryPath)
 
 	out := make([]*cmdv1alpha1.ListPackagesResponse_PackagePreview, 0, len(reg.GetPackages()))
 	for _, pkg := range reg.GetPackages() {
@@ -145,7 +145,7 @@ func (e *engine) ListPackages(
 			Name:        pkg.GetName(),
 			Registry:    reg.GetName(),
 			Description: pkg.GetDescription(),
-			Path:        ha.Dir().Join(pkg.GetName()).String(),
+			Path:        ha.Dir().Join(pkg.GetName() + ".json").String(),
 			JsonSchema:  string(b),
 		})
 	}
@@ -154,65 +154,10 @@ func (e *engine) ListPackages(
 }
 
 func (e *engine) ViewPackage(ctx context.Context, pkg string) (*v1alpha1.Package, error) {
-	p, err := registry.NewLoader(pkg).LoadPackage(ctx, pkg)
+	p, err := registry.NewFetcher(pkg).LoadPackage(ctx, pkg)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, v := range p.GetFiles() {
-		if len(v.GetSource().GetRaw()) > 0 {
-			v.Source.Raw = nil
-		}
-	}
-
 	return p, nil
-}
-
-func newHandler(ha string) *pathHandler {
-	var u *url.URL
-	if registry.IsHTTPPath(ha) {
-		u, _ = url.Parse(ha)
-	}
-	return &pathHandler{
-		URL:  u,
-		Path: ha,
-	}
-}
-
-type pathHandler struct {
-	URL  *url.URL
-	Path string
-}
-
-func (p *pathHandler) Join(s ...string) *pathHandler {
-	var u url.URL
-	var pa string
-	if p.URL != nil {
-		u = *u.JoinPath(s...)
-	} else {
-		pa = filepath.Join(append([]string{p.Path}, s...)...)
-	}
-	return &pathHandler{
-		URL:  &u,
-		Path: pa,
-	}
-}
-
-func (p *pathHandler) Dir() *pathHandler {
-	var u url.URL
-	var pa string
-	if p.URL != nil {
-		u = *p.URL
-		u.Path = path.Dir(u.Path)
-	} else {
-		pa = filepath.Dir(p.Path)
-	}
-	return &pathHandler{
-		URL:  &u,
-		Path: pa,
-	}
-}
-
-func (p *pathHandler) String() string {
-	return p.Path
 }

@@ -9,28 +9,28 @@ import (
 )
 
 var (
-	//go:embed jsonschema/skiff.cmd.v1alpha1.add-package-request.json
+	//go:embed jsonschema/skiff.cmd.v1alpha1.AddPackageRequest.json
 	AddPackageRequestJSONSchemaContent []byte
 
-	//go:embed jsonschema/skiff.cmd.v1alpha1.add-package-response.json
+	//go:embed jsonschema/skiff.cmd.v1alpha1.AddPackageResponse.json
 	AddPackageResponseJSONSchemaContent []byte
 
-	//go:embed jsonschema/skiff.cmd.v1alpha1.list-packages-request.json
+	//go:embed jsonschema/skiff.cmd.v1alpha1.ListPackagesRequest.json
 	ListPackagesRequestJSONSchemaContent []byte
 
-	//go:embed jsonschema/skiff.cmd.v1alpha1.list-packages-response.json
+	//go:embed jsonschema/skiff.cmd.v1alpha1.ListPackagesResponse.json
 	ListPackagesResponseJSONSchemaContent []byte
 
-	//go:embed jsonschema/skiff.cmd.v1alpha1.view-packages-request.json
+	//go:embed jsonschema/skiff.cmd.v1alpha1.ViewPackagesRequest.json
 	ViewPackagesRequestJSONSchemaContent []byte
 
-	//go:embed jsonschema/skiff.cmd.v1alpha1.view-packages-response.json
+	//go:embed jsonschema/skiff.cmd.v1alpha1.ViewPackagesResponse.json
 	ViewPackagesResponseJSONSchemaContent []byte
 )
 
 type Exchange struct {
-	RequestSchema  *jsonschema.Resolved
-	ResponseSchema *jsonschema.Resolved
+	RequestSchema  *jsonschema.Schema
+	ResponseSchema *jsonschema.Schema
 }
 
 type ExchangeName int
@@ -62,10 +62,10 @@ func LoadExchange(name ExchangeName) (*Exchange, error) {
 		return nil, fmt.Errorf("%d is not a valid exchange", name)
 	}
 
-	var req, resp *jsonschema.Schema
+	var req, resp jsonschema.Schema
 	var reqRes, respRes *jsonschema.Resolved
 
-	err := json.Unmarshal(schemas[0], req)
+	err := json.Unmarshal(schemas[0], &req)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func LoadExchange(name ExchangeName) (*Exchange, error) {
 		return nil, err
 	}
 
-	err = json.Unmarshal(schemas[1], resp)
+	err = json.Unmarshal(schemas[1], &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func LoadExchange(name ExchangeName) (*Exchange, error) {
 	}
 
 	return &Exchange{
-		RequestSchema:  reqRes,
-		ResponseSchema: respRes,
+		RequestSchema:  reqRes.Schema(),
+		ResponseSchema: respRes.Schema(),
 	}, nil
 }

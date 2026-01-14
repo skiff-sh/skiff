@@ -5,8 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"sync"
 
 	pluginv1alpha1 "github.com/skiff-sh/api/go/skiff/plugin/v1alpha1"
+
+	"github.com/skiff-sh/skiff/pkg/fileutil"
 
 	"github.com/skiff-sh/skiff/pkg/interact"
 	"github.com/skiff-sh/skiff/pkg/plugin"
@@ -28,10 +32,7 @@ type PackageFile struct {
 	Target tmpl.Template
 
 	// The raw contents of the file.
-	Contents []byte
-
-	// The file housing the contents of the file. This is often the same as File except when it references another file within the package.
-	SourceFile *v1alpha1.File
+	Contents *bytes.Buffer
 
 	// The original file.
 	File *v1alpha1.File
@@ -42,13 +43,14 @@ type PackageFile struct {
 
 func NewPackageFile(
 	ctx context.Context,
+	sourcePath string,
 	compiler plugin.Compiler,
 	sys system.System,
 	tmplFact tmpl.Factory,
 	pkg *v1alpha1.Package,
 	v *v1alpha1.File,
 ) (*PackageFile, error) {
-	src, srcFile, err := resolveSource(pkg, v)
+	src, err := resolveSourceContents(ctx, sourcePath, v)
 	if err != nil {
 		return nil, err
 	}
@@ -56,9 +58,9 @@ func NewPackageFile(
 	var fi ContentRenderer
 	switch v.GetType() {
 	case v1alpha1.File_file:
-		fi, err = NewTemplateFileContentRenderer(tmplFact, src)
+		fi, err = NewTemplateFileContentRenderer(tmplFact, src.Bytes())
 	case v1alpha1.File_plugin:
-		fi, err = NewPluginContentRenderer(ctx, src, compiler, sys)
+		fi, err = NewPluginContentRenderer(ctx, src.Bytes(), compiler, sys)
 	default:
 		return nil, fmt.Errorf("%s is not a valid file type", v.GetType().String())
 	}
@@ -72,12 +74,11 @@ func NewPackageFile(
 	}
 
 	return &PackageFile{
-		Renderer:   fi,
-		Target:     target,
-		Contents:   src,
-		SourceFile: srcFile,
-		File:       v,
-		Package:    pkg,
+		Renderer: fi,
+		Target:   target,
+		Contents: src,
+		File:     v,
+		Package:  pkg,
 	}, nil
 }
 
@@ -125,7 +126,7 @@ type ContentRenderContext struct {
 }
 
 type ContentRenderer interface {
-	RenderContent(c *ContentRenderContext, d schema.PackageDataSource) ([]byte, error)
+	RenderContent(c *ContentRenderContext, d schema.PackageDataSource) (*bytes.Buffer, error)
 }
 
 var _ ContentRenderer = (*TemplateContentRenderer)(nil)
@@ -146,7 +147,10 @@ func NewTemplateFileContentRenderer(t tmpl.Factory, src []byte) (*TemplateConten
 	return out, nil
 }
 
-func (f *TemplateContentRenderer) RenderContent(_ *ContentRenderContext, d schema.PackageDataSource) ([]byte, error) {
+func (f *TemplateContentRenderer) RenderContent(
+	_ *ContentRenderContext,
+	d schema.PackageDataSource,
+) (*bytes.Buffer, error) {
 	// Not using the pool because the bytes must be held after this method returns.
 	buff := bytes.NewBuffer(nil)
 	err := f.Content.Render(d.RawData(), buff)
@@ -154,7 +158,7 @@ func (f *TemplateContentRenderer) RenderContent(_ *ContentRenderContext, d schem
 		return nil, fmt.Errorf("failed to render 'contents' template: %w", err)
 	}
 
-	return buff.Bytes(), nil
+	return buff, nil
 }
 
 var _ ContentRenderer = (*PluginContentRenderer)(nil)
@@ -182,7 +186,10 @@ func NewPluginContentRenderer(
 	return out, nil
 }
 
-func (p *PluginContentRenderer) RenderContent(c *ContentRenderContext, d schema.PackageDataSource) ([]byte, error) {
+func (p *PluginContentRenderer) RenderContent(
+	c *ContentRenderContext,
+	d schema.PackageDataSource,
+) (*bytes.Buffer, error) {
 	resp, err := p.Plugin.SendRequest(c.Ctx, &pluginv1alpha1.Request{
 		Metadata: &pluginv1alpha1.RequestMetadata{
 			Package: c.Package.GetName(),
@@ -211,46 +218,59 @@ func (p *PluginContentRenderer) RenderContent(c *ContentRenderContext, d schema.
 		return nil, fmt.Errorf("\n%w\nLogs:\n%s", errors.Join(errs...), string(resp.Logs()))
 	}
 
-	var content []byte
+	buff := bufferpool.GetBytesBuffer()
 	if resp.Body.WriteFile != nil {
-		content = resp.Body.WriteFile.Contents
+		buff.Write(resp.Body.WriteFile.Contents)
 	}
 
-	return content, nil
+	return buff, nil
 }
 
 type File struct {
 	Path       string
 	SourcePath string
-	Content    []byte
+	Content    *bytes.Buffer
+	closer     sync.Once
+}
+
+func (f *File) Close() {
+	f.closer.Do(func() {
+		bufferpool.PutBytesBuffers(f.Content)
+	})
 }
 
 func (f *File) WriteTo(fsys filesystem.Filesystem) error {
-	return fsys.WriteFile(f.Path, f.Content)
+	return fsys.WriteFile(f.Path, f.Content.Bytes())
 }
 
-func resolveSource(pkg *v1alpha1.Package, v *v1alpha1.File) (raw []byte, srcFile *v1alpha1.File, err error) {
+func resolveSourceContents(ctx context.Context, pkgSourcePath string, v *v1alpha1.File) (raw *bytes.Buffer, err error) {
 	if v.GetSource() == nil {
-		return nil, nil, fmt.Errorf("file %s is missing the source", v.GetPath())
+		return nil, fmt.Errorf("file %s is missing the source", v.GetPath())
 	}
 
+	registryRoot := fileutil.NewPath(pkgSourcePath).Dir()
+	buff := bufferpool.GetBytesBuffer()
 	switch {
 	case v.Source.Text != nil:
-		return []byte(v.GetSource().GetText()), v, nil
-	case len(v.GetSource().GetRaw()) > 0:
-		return v.GetSource().GetRaw(), v, nil
-	case v.Source.FileIndex != nil:
-		idx := int(v.GetSource().GetFileIndex())
-		if idx < 0 || idx > len(pkg.GetFiles()) {
-			return nil, nil, fmt.Errorf("references non-existent file index %d", idx)
+		buff.WriteString(*v.Source.Text)
+		return buff, nil
+	case v.Source.Path != nil:
+		fp := *v.Source.Path
+		src := registryRoot.Join(fp).String()
+		content, err := NewFetcher(src).Fetch(ctx, src)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch %s for file %s", src, v.Path)
 		}
-		fi := pkg.GetFiles()[idx]
+		defer func() {
+			_ = content.Close()
+		}()
 
-		if len(fi.GetSource().GetRaw()) == 0 {
-			return nil, nil, fmt.Errorf("references empty file %s", fi.GetPath())
+		_, err = io.Copy(buff, content)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch %s for file %s", src, v.Path)
 		}
-		return fi.GetSource().GetRaw(), fi, nil
+		return buff, nil
 	}
 
-	return nil, nil, fmt.Errorf("file %s is missing a source", v.GetPath())
+	return nil, fmt.Errorf("file %s is missing a source", v.Path)
 }

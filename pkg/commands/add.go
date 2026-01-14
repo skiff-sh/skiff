@@ -46,25 +46,25 @@ var AddFlagRoot = &cli.StringFlag{
 var ErrSchema = errors.New("schema error")
 
 type AddAction struct {
-	Packages     []*registry.LoadedPackage
+	Packages     []*registry.CompiledPackage
 	PackageFlags map[string][]*schema.Flag
 }
 
 // NewAddAction constructor for AddAction. Packages should be retrieved prior to the construction
 // of this action because flags are dynamically added based on the package schema.
-func NewAddAction(flags map[string][]*schema.Flag, packages []*registry.LoadedPackage) *AddAction {
+func NewAddAction(flags map[string][]*schema.Flag, packages []*registry.CompiledPackage) *AddAction {
 	return &AddAction{
 		Packages:     packages,
 		PackageFlags: flags,
 	}
 }
 
-func LoadPackages(ctx context.Context, packages []string) ([]*registry.LoadedPackage, error) {
+func LoadPackages(ctx context.Context, packages []string) ([]*registry.CompiledPackage, error) {
 	if len(packages) == 0 {
 		return nil, errors.New("path to package required")
 	}
 
-	pkgs := make([]*registry.LoadedPackage, 0, len(packages))
+	pkgs := make([]*registry.CompiledPackage, 0, len(packages))
 	for _, v := range packages {
 		pkg, err := registry.LoadPackage(ctx, v)
 		if err != nil {
@@ -77,7 +77,7 @@ func LoadPackages(ctx context.Context, packages []string) ([]*registry.LoadedPac
 	return pkgs, nil
 }
 
-func FlagsFromPackages(nonInteractive bool, pkgs []*registry.LoadedPackage) (map[string][]*schema.Flag, error) {
+func FlagsFromPackages(nonInteractive bool, pkgs []*registry.CompiledPackage) (map[string][]*schema.Flag, error) {
 	out := make(map[string][]*schema.Flag, len(pkgs))
 	for _, pkg := range pkgs {
 		fl, err := pkg.CLIFlags(nonInteractive)
@@ -134,7 +134,7 @@ func (a *AddAction) Act(ctx context.Context, args *AddArgs) error {
 			formFields = append(formFields, ff)
 		}
 
-		pkg := pkgs[slices.IndexFunc(pkgs, func(p *registry.LoadedPackage) bool {
+		pkg := pkgs[slices.IndexFunc(pkgs, func(p *registry.CompiledPackage) bool {
 			return p.Proto.GetName() == packageName
 		})]
 

@@ -2,6 +2,7 @@ package bufferpool
 
 import (
 	"bytes"
+	"io"
 	"sync"
 )
 
@@ -49,4 +50,19 @@ func PutBytesReaders(buf ...*bytes.Reader) {
 	for i := range buf {
 		bytesReaderPool.Put(buf[i])
 	}
+}
+
+func AsReadCloser(buff *bytes.Buffer) io.ReadCloser {
+	return &buffer{buff}
+}
+
+var _ io.Closer = (*buffer)(nil)
+
+type buffer struct {
+	*bytes.Buffer
+}
+
+func (b *buffer) Close() error {
+	PutBytesBuffer(b.Buffer)
+	return nil
 }

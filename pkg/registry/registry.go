@@ -3,8 +3,9 @@ package registry
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
-	"strings"
+	"os"
 
 	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
 	"google.golang.org/protobuf/proto"
@@ -14,11 +15,8 @@ import (
 	"github.com/skiff-sh/skiff/pkg/valid"
 )
 
-func IsHTTPPath(p string) bool {
-	return strings.HasPrefix(p, "http") || strings.HasPrefix(p, "https")
-}
-
-type Loader interface {
+type Fetcher interface {
+	Fetch(ctx context.Context, pa string) (io.ReadCloser, error)
 	LoadRegistry(ctx context.Context, path string) (*v1alpha1.Registry, error)
 	LoadPackage(ctx context.Context, path string) (*v1alpha1.Package, error)
 }
@@ -27,66 +25,83 @@ type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-var _ Loader = (*FileLoader)(nil)
+var _ Fetcher = (*FileFetcher)(nil)
 
-type FileLoader struct {
+type FileFetcher struct {
 }
 
-func NewFileLoader() *FileLoader {
-	return &FileLoader{}
+func (f *FileFetcher) Fetch(_ context.Context, pa string) (io.ReadCloser, error) {
+	fi, err := os.Open(pa)
+	if err != nil {
+		return nil, err
+	}
+	return fi, nil
 }
 
-func (f *FileLoader) LoadRegistry(_ context.Context, path string) (*v1alpha1.Registry, error) {
+func NewFileFetcher() *FileFetcher {
+	return &FileFetcher{}
+}
+
+func (f *FileFetcher) LoadRegistry(_ context.Context, path string) (*v1alpha1.Registry, error) {
 	reg := new(v1alpha1.Registry)
 	err := protoencode.LoadFile(path, reg)
 	return reg, err
 }
 
-func (f *FileLoader) LoadPackage(_ context.Context, path string) (*v1alpha1.Package, error) {
+func (f *FileFetcher) LoadPackage(_ context.Context, path string) (*v1alpha1.Package, error) {
 	reg := new(v1alpha1.Package)
 	err := protoencode.LoadFile(path, reg)
 	return reg, err
 }
 
-var _ Loader = (*HTTPLoader)(nil)
+var _ Fetcher = (*HTTPFetcher)(nil)
 
-type HTTPLoader struct {
+type HTTPFetcher struct {
 	Client HTTPClient
 }
 
-func NewHTTPLoader(cl HTTPClient) *HTTPLoader {
-	return &HTTPLoader{
+func (h *HTTPFetcher) Fetch(ctx context.Context, pa string) (io.ReadCloser, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pa, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := h.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Body, nil
+}
+
+func NewHTTPFetcher(cl HTTPClient) *HTTPFetcher {
+	return &HTTPFetcher{
 		Client: cl,
 	}
 }
 
-func (h *HTTPLoader) LoadRegistry(ctx context.Context, path string) (*v1alpha1.Registry, error) {
+func (h *HTTPFetcher) LoadRegistry(ctx context.Context, path string) (*v1alpha1.Registry, error) {
 	msg := new(v1alpha1.Registry)
 	err := h.load(ctx, path, msg)
 	return msg, err
 }
 
-func (h *HTTPLoader) LoadPackage(ctx context.Context, path string) (*v1alpha1.Package, error) {
+func (h *HTTPFetcher) LoadPackage(ctx context.Context, path string) (*v1alpha1.Package, error) {
 	msg := new(v1alpha1.Package)
 	err := h.load(ctx, path, msg)
 	return msg, err
 }
 
-func (h *HTTPLoader) load(ctx context.Context, path string, p proto.Message) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, path, nil)
-	if err != nil {
-		return err
-	}
-
-	resp, err := h.Client.Do(req)
+func (h *HTTPFetcher) load(ctx context.Context, path string, p proto.Message) error {
+	reader, err := h.Fetch(ctx, path)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		_ = resp.Body.Close()
+		_ = reader.Close()
 	}()
 
-	return protoencode.Load(resp.Body, p)
+	return protoencode.Load(reader, p)
 }
 
 func ValidateRegistry(reg *v1alpha1.Registry, fsys filesystem.Filesystem) error {

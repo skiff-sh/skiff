@@ -72,10 +72,14 @@ type Field struct {
 }
 
 func NewField(p *v1alpha1.Field) (*Field, error) {
+	en := p.GetEnum().AsSlice()
+	if len(en) == 0 {
+		en = nil
+	}
 	out := &Field{
 		Proto:   p,
 		Default: p.GetDefault().AsInterface(),
-		Enum:    p.GetEnum().AsSlice(),
+		Enum:    en,
 	}
 
 	return out, nil

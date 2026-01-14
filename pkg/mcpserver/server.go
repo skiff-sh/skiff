@@ -2,8 +2,10 @@ package mcpserver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -11,6 +13,10 @@ import (
 	v1alpha2 "github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
 	"github.com/skiff-sh/config/contexts"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/skiff-sh/skiff/pkg/fileutil"
+
+	"github.com/skiff-sh/skiff/pkg/system"
 
 	"github.com/skiff-sh/skiff/pkg/collection"
 
@@ -34,7 +40,7 @@ type Server struct {
 func NewServer(eng engine.Engine) (*Server, error) {
 	srv := mcp.NewServer(&mcp.Implementation{
 		Name:    vars.AppName,
-		Title:   "Create and edit files from template packages.",
+		Title:   "Create and edit files from template packages. These are bundles of opinionated, user-defined files. The package files may contain large amounts of binary **never** cat them out directly. Use the provided tools to navigate them.",
 		Version: vars.Version,
 	}, &mcp.ServerOptions{
 		Logger:   slog.Default(),
@@ -43,22 +49,22 @@ func NewServer(eng engine.Engine) (*Server, error) {
 
 	addPkg, err := embedded.LoadExchange(embedded.ExchangeNameAddPackage)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load add package json schemas: %w", err)
+		return nil, fmt.Errorf("failed to load 'add package' json schemas: %w", err)
 	}
 
 	listPkgs, err := embedded.LoadExchange(embedded.ExchangeNameListPackages)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load list packages json schemas: %w", err)
+		return nil, fmt.Errorf("failed to load 'list packages' json schemas: %w", err)
 	}
 
 	viewPkg, err := embedded.LoadExchange(embedded.ExchangeNameViewPackages)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load list packages json schemas: %w", err)
+		return nil, fmt.Errorf("failed to load 'view packages' json schemas: %w", err)
 	}
 
 	srv.AddTool(&mcp.Tool{
 		Name:         "add_package",
-		Description:  "Add/edit packages of files in the user's project. You **must** call 'list_packages' for each package you want to add to retrieve the data schemas under the 'schema' field.",
+		Description:  "Add/edit packages of files in the user's project. Returns a list of patches to be applied. You **must** retrieve the data schemas required for each package.",
 		InputSchema:  addPkg.RequestSchema,
 		OutputSchema: addPkg.ResponseSchema,
 	}, handleAddPackage(eng))
@@ -91,6 +97,14 @@ func handleViewPackages(eng engine.Engine) mcp.ToolHandler {
 
 		resp := &v1alpha1.ViewPackagesResponse{Packages: make([]*v1alpha2.Package, 0, len(req.GetPackages()))}
 		for _, v := range req.GetPackages() {
+			pa := fileutil.NewPath(v)
+			if pa.Ext() == "" {
+				pa.EditPath(func(s string) string {
+					return s + ".json"
+				})
+			}
+			v = pa.String()
+
 			pkg, err := eng.ViewPackage(ctx, v)
 			if err != nil {
 				logger.Error("Invalid package.", "name", v, "err", err.Error())
@@ -121,7 +135,15 @@ func handleAddPackage(eng engine.Engine) mcp.ToolHandler {
 			return newErrResult(err), nil
 		}
 
-		pkg, err := registry.LoadPackage(ctx, req.GetPackage())
+		pkgPath := req.Package
+		pa := fileutil.NewPath(pkgPath)
+		if pa.Ext() == "" {
+			pa.EditPath(func(s string) string {
+				return s + ".json"
+			})
+		}
+		pkgPath = pa.String()
+		compiled, err := registry.LoadPackage(ctx, pkgPath)
 		if err != nil {
 			return newErrResult(fmt.Errorf("%s is not a valid package: %w", req.GetPackage(), err)), nil
 		}
@@ -131,7 +153,19 @@ func handleAddPackage(eng engine.Engine) mcp.ToolHandler {
 			return newErrResult(err), nil
 		}
 
-		res, err := eng.AddPackage(ctx, pkg, schema.NewPackageSource(vals...))
+		src := schema.NewPackageSource(vals...)
+		err = compiled.JSONSchema.Validate(src.RawData())
+		if err != nil {
+			return newErrResult(
+				fmt.Errorf(
+					"data doesn't conform to package schema. you can get the schema from calling `view_package` on package '%s': %w",
+					pkgPath,
+					err,
+				),
+			), nil
+		}
+
+		res, err := eng.AddPackage(ctx, compiled, src)
 		if err != nil {
 			return newErrResult(err), nil
 		}
@@ -146,11 +180,25 @@ func handleAddPackage(eng engine.Engine) mcp.ToolHandler {
 
 func handleListPackage(eng engine.Engine) mcp.ToolHandler {
 	return func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		logger := contexts.GetLogger(ctx)
+		wd, _ := system.Getwd()
+		logger := contexts.GetLogger(ctx).With("wd", wd)
 		req := new(v1alpha1.ListPackagesRequest)
 		err := protoencode.Unmarshal(request.Params.Arguments, req)
 		if err != nil {
 			return newErrResult(fmt.Errorf("invalid input %w", err)), nil
+		}
+
+		logger.Debug("Listing package request", "request", req.String())
+
+		if len(req.Registries) == 0 {
+			if req.ProjectRoot == nil {
+				return newErrResult(errors.New("please specify either a project_root or a list of registries")), nil
+			}
+			root := *req.ProjectRoot
+			hiddenDir := filepath.Join(root, "public", "r", "registry.json")
+			if fileutil.Exists(hiddenDir) {
+				req.Registries = append(req.Registries, hiddenDir)
+			}
 		}
 
 		content := make([]*v1alpha1.ListPackagesResponse_PackagePreview, 0, len(req.GetRegistries()))

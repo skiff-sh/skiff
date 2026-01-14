@@ -14,7 +14,7 @@ require (
 	github.com/google/jsonschema-go v0.4.1
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/modelcontextprotocol/go-sdk v1.1.0
-	github.com/skiff-sh/api/go v0.0.0-20260103061752-0392f19b71e4
+	github.com/skiff-sh/api/go v0.0.0-20260106041649-f21b568c480a
 	github.com/skiff-sh/config v0.0.0-20250921220812-93e59348136e
 	github.com/skiff-sh/sdk-go v0.0.0-20251218234652-cc4f59cad08b
 	github.com/stretchr/testify v1.11.1

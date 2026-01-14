@@ -136,6 +136,7 @@ Global options:{{template "visiblePersistentFlagTemplate" .}}{{end}}
 				Usage: "MCP server",
 				Flags: []cli.Flag{
 					MCPFlagRoot,
+					MCPFlagAddr,
 				},
 				Action: func(ctx context.Context, command *cli.Command) error {
 					projectPath := command.String(MCPFlagRoot.Name)
@@ -152,6 +153,7 @@ Global options:{{template "visiblePersistentFlagTemplate" .}}{{end}}
 
 					return bc.Act(ctx, &MCPActionArgs{
 						ProjectRoot: filesystem.New(projectPath),
+						Address:     command.String(MCPFlagAddr.Name),
 					})
 				},
 			},

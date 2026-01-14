@@ -21,6 +21,8 @@ type Filesystem interface {
 	// WriteFile writes a file to the project root. If name is absolute and not within the project root, an error is returned. Automatically creates directories for file recursively.
 	WriteFile(name string, content []byte) error
 
+	WriteFileFrom(name string, content io.Reader) error
+
 	// AsRel returns the enforced relative path to the root. If name is absolute and not within the path, an error is returned.
 	AsRel(name string) (string, error)
 
@@ -54,6 +56,28 @@ func New(fp string) Filesystem {
 type fsys struct {
 	RootP  string
 	RootFS fs.FS
+}
+
+func (f *fsys) WriteFileFrom(name string, content io.Reader) error {
+	if v, ok := content.(interface{ Bytes() []byte }); ok {
+		return f.WriteFile(name, v.Bytes())
+	}
+
+	fp, err := f.Abs(name)
+	if err != nil {
+		return err
+	}
+
+	fi, err := os.OpenFile(fp, os.O_RDWR|os.O_CREATE|os.O_TRUNC, fileutil.DefaultFileMode)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = fi.Close()
+	}()
+
+	_, err = io.Copy(fi, content)
+	return err
 }
 
 func (f *fsys) ReadFileIn(name string, buff io.Writer) error {
