@@ -3,7 +3,9 @@ package fileutil
 import (
 	"fmt"
 	"io/fs"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -90,4 +92,91 @@ func Abs(fp string) (string, error) {
 		return "", err
 	}
 	return filepath.Join(wd, fp), nil
+}
+
+func IsHTTPPath(p string) bool {
+	return strings.HasPrefix(p, "http") || strings.HasPrefix(p, "https")
+}
+
+func NewPath(ha string) *Path {
+	var u *url.URL
+	if IsHTTPPath(ha) {
+		u, _ = url.Parse(ha)
+	}
+	return &Path{
+		URL:  u,
+		Path: ha,
+	}
+}
+
+type Path struct {
+	URL  *url.URL
+	Path string
+}
+
+func (p *Path) Join(s ...string) *Path {
+	var u *url.URL
+	var pa string
+	if p.URL != nil {
+		u = &url.URL{}
+		u = u.JoinPath(s...)
+	} else {
+		pa = filepath.Join(append([]string{p.Path}, s...)...)
+	}
+	return &Path{
+		URL:  u,
+		Path: pa,
+	}
+}
+
+func (p *Path) Dir() *Path {
+	var u *url.URL
+	var pa string
+	if p.URL != nil {
+		u = &(*p.URL)
+		u.Path = path.Dir(u.Path)
+	} else {
+		pa = filepath.Dir(p.Path)
+	}
+	return &Path{
+		URL:  u,
+		Path: pa,
+	}
+}
+
+func (p *Path) Ext() string {
+	if p.URL != nil {
+		return path.Ext(p.URL.Path)
+	}
+	return filepath.Ext(p.Path)
+}
+
+func (p *Path) Base() string {
+	if p.URL != nil {
+		return path.Base(p.URL.Path)
+	}
+	return filepath.Base(p.Path)
+}
+
+func (p *Path) String() string {
+	if p.URL != nil {
+		return p.URL.String()
+	}
+	return p.Path
+}
+
+func (p *Path) Scheme() string {
+	if p.URL != nil {
+		return p.URL.Scheme
+	}
+	return "file"
+}
+
+func (p *Path) EditPath(f func(s string) string) *Path {
+	if p.URL != nil {
+		p.Path = f(p.Path)
+	} else {
+		p.Path = f(p.Path)
+	}
+	return p
 }

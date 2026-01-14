@@ -2,6 +2,7 @@ package filesystem
 
 import (
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -14,8 +15,13 @@ import (
 type Filesystem interface {
 	fs.FS
 	fs.ReadFileFS
+	fs.StatFS
+	// ReadFileIn same as fs.ReadFile but reads into a buffer rather than into a slice of bytes.
+	ReadFileIn(name string, buff io.Writer) error
 	// WriteFile writes a file to the project root. If name is absolute and not within the project root, an error is returned. Automatically creates directories for file recursively.
 	WriteFile(name string, content []byte) error
+
+	WriteFileFrom(name string, content io.Reader) error
 
 	// AsRel returns the enforced relative path to the root. If name is absolute and not within the path, an error is returned.
 	AsRel(name string) (string, error)
@@ -34,8 +40,6 @@ type Filesystem interface {
 	// Symlink same as os.Symlink. oldname can be outside the scope of the Filesystem.
 	Symlink(oldname, newname string) error
 	Create(name string) (*os.File, error)
-
-	Stat(name string) (fs.FileInfo, error)
 }
 
 type WriterTo interface {
@@ -52,6 +56,47 @@ func New(fp string) Filesystem {
 type fsys struct {
 	RootP  string
 	RootFS fs.FS
+}
+
+func (f *fsys) WriteFileFrom(name string, content io.Reader) error {
+	if v, ok := content.(interface{ Bytes() []byte }); ok {
+		return f.WriteFile(name, v.Bytes())
+	}
+
+	fp, err := f.Abs(name)
+	if err != nil {
+		return err
+	}
+
+	fi, err := os.OpenFile(fp, os.O_RDWR|os.O_CREATE|os.O_TRUNC, fileutil.DefaultFileMode)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = fi.Close()
+	}()
+
+	_, err = io.Copy(fi, content)
+	return err
+}
+
+func (f *fsys) ReadFileIn(name string, buff io.Writer) error {
+	rel, err := f.AsRel(name)
+	if err != nil {
+		return err
+	}
+
+	fi, err := f.RootFS.Open(rel)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(buff, fi)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (f *fsys) Stat(name string) (fs.FileInfo, error) {
@@ -191,5 +236,13 @@ func (f *fsys) WriteFile(name string, content []byte) error {
 
 	_ = os.MkdirAll(filepath.Dir(target), fileutil.DefaultDirMode)
 
-	return os.WriteFile(target, content, fileutil.DefaultFileMode)
+	var mode os.FileMode
+	st, err := os.Stat(target)
+	if err != nil {
+		mode = fileutil.DefaultFileMode
+	} else {
+		mode = st.Mode()
+	}
+
+	return os.WriteFile(target, content, mode)
 }

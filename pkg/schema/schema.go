@@ -16,7 +16,7 @@ type Schema struct {
 	Fields []*Field
 }
 
-func NewSchema(sch *v1alpha1.Schema) (*Schema, error) {
+func New(sch *v1alpha1.Schema) (*Schema, error) {
 	out := &Schema{
 		Proto:  sch,
 		Fields: make([]*Field, 0, len(sch.GetFields())),
@@ -63,17 +63,23 @@ func NewSchema(sch *v1alpha1.Schema) (*Schema, error) {
 
 type Field struct {
 	Proto *v1alpha1.Field
+
 	// Set if the default field is present.
 	Default any
-	// Set if the enum field is present.
+
+	// Set if the enum field is present. If the type is array and the items field has an enum, this is set to the items enum.
 	Enum []any
 }
 
 func NewField(p *v1alpha1.Field) (*Field, error) {
+	en := p.GetEnum().AsSlice()
+	if len(en) == 0 {
+		en = nil
+	}
 	out := &Field{
 		Proto:   p,
 		Default: p.GetDefault().AsInterface(),
-		Enum:    p.GetEnum().AsSlice(),
+		Enum:    en,
 	}
 
 	return out, nil

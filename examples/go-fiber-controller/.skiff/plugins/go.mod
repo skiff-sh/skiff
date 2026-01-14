@@ -3,8 +3,8 @@ module plugins
 go 1.25.5
 
 require (
-	github.com/skiff-sh/api/go v0.0.0-20251218234142-a54909c7434e
-	github.com/skiff-sh/sdk-go v0.0.0-20251211011239-f944c99006d7
+	github.com/skiff-sh/api/go v0.0.0-20260106041649-f21b568c480a
+	github.com/skiff-sh/sdk-go v0.0.0-20251218234652-cc4f59cad08b
 	golang.org/x/text v0.32.0
 )
 

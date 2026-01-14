@@ -40,7 +40,7 @@ func Default() *Config {
 	return &Config{
 		Log: config.Log{
 			Level:   "info",
-			Outputs: "stdout",
+			Outputs: "stderr",
 		},
 	}
 }

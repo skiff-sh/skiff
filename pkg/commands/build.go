@@ -1,22 +1,15 @@
 package commands
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io/fs"
-	"log/slog"
 	"os"
 	"path/filepath"
-	"slices"
-	"sync"
-	"unicode/utf8"
 
-	"github.com/skiff-sh/config/ptr"
+	"github.com/skiff-sh/config/contexts"
 	"github.com/urfave/cli/v3"
-	"google.golang.org/protobuf/proto"
 
-	"github.com/skiff-sh/skiff/pkg/bufferpool"
+	"github.com/skiff-sh/skiff/pkg/build"
 
 	"github.com/skiff-sh/skiff/pkg/filesystem"
 	"github.com/skiff-sh/skiff/pkg/plugin"
@@ -54,6 +47,7 @@ type BuildArgs struct {
 }
 
 func (b *BuildCommandAction) Act(ctx context.Context, args *BuildArgs) error {
+	logger := contexts.GetLogger(ctx)
 	_ = os.MkdirAll(args.OutputDirectory, fileutil.DefaultDirMode)
 
 	regPath := fileutil.MustAbs(args.RegistryPath)
@@ -69,21 +63,42 @@ func (b *BuildCommandAction) Act(ctx context.Context, args *BuildArgs) error {
 	if err != nil {
 		return fmt.Errorf("failed to load registry at %s: %w", regPath, err)
 	}
-	slog.DebugContext(ctx, "Loading registry file.", "path", regPath)
+	logger.DebugContext(ctx, "Reading packages for registry file.", "registry", regPath)
 
-	for _, v := range reg.GetPackages() {
-		targetPath := filepath.Join(args.OutputDirectory, v.GetName()+".json")
-		interact.Infof("Writing file %s", targetPath)
-		pkg, err := HydratePackage(ctx, sync.OnceValue(func() *buildTools {
-			return newPluginTools(ctx)
-		}), v, regFS)
+	output := filesystem.New(args.OutputDirectory)
+
+	builder := build.NewBuilder(build.NewToolsProvider(&plugin.InstallHooks{
+		OnDownload: func() {
+			interact.Info("Installing Go...")
+		},
+		OnDownloadComplete: func() {
+			interact.Info("Done!")
+		},
+	}), &build.Hooks{
+		BeforeBuild: func(f *v1alpha1.File) {
+			interact.Infof("Building plugin %s", f.Path)
+		},
+		OnBuild: func(_ *v1alpha1.File) {
+			interact.Info("Done!")
+		},
+	})
+
+	builds := make([]*build.Package, 0, len(reg.Packages))
+	for _, v := range reg.Packages {
+		interact.Infof("Building package %s", v.Name)
+
+		b, err := builder.Build(ctx, regFS, v)
 		if err != nil {
-			return fmt.Errorf("package %s: %w", v.GetName(), err)
+			return fmt.Errorf("package %s: %w", v.Name, err)
 		}
+		builds = append(builds, b)
+		interact.Info("Done!")
+	}
 
-		err = WritePackage(pkg, targetPath)
+	for _, v := range builds {
+		err = v.WriteTo(output)
 		if err != nil {
-			return fmt.Errorf("package %s: %w", v.GetName(), err)
+			return fmt.Errorf("package %s: %w", v.Proto.Name, err)
 		}
 	}
 
@@ -106,119 +121,4 @@ func (b *BuildCommandAction) Act(ctx context.Context, args *BuildArgs) error {
 	}
 
 	return nil
-}
-
-type buildTools struct {
-	Builder        plugin.Builder
-	PluginCompiler plugin.Compiler
-	Err            error
-}
-
-func newPluginTools(ctx context.Context) *buildTools {
-	out := &buildTools{}
-	var err error
-	out.Builder, err = plugin.CreateOrInstallGoBuilder(ctx, &plugin.InstallHooks{
-		OnDownload: func() {
-			interact.Info("Installing Go...")
-		},
-		OnDownloadComplete: func() {
-			interact.Info("Done!")
-		},
-	})
-	if err != nil {
-		out.Err = fmt.Errorf("failed to instantiate Go CLI: %w", err)
-		return out
-	}
-
-	out.PluginCompiler, err = plugin.NewWazeroCompiler()
-	if err != nil {
-		out.Err = fmt.Errorf("failed to create WASM compiler: %w", err)
-		return out
-	}
-
-	return out
-}
-
-func HydratePackage(
-	ctx context.Context,
-	toolsProvider func() *buildTools,
-	pkg *v1alpha1.Package,
-	registryRoot filesystem.Filesystem,
-) (*v1alpha1.Package, error) {
-	out := proto.CloneOf(pkg)
-	buff := bufferpool.GetBytesBuffer()
-	defer bufferpool.PutBytesBuffers(buff)
-	for _, v := range out.GetFiles() {
-		src := v.GetSource()
-		if src == nil {
-			src = &v1alpha1.File_Source{}
-		}
-
-		switch v.GetType() {
-		case v1alpha1.File_file:
-			content, err := fs.ReadFile(registryRoot, v.GetPath())
-			if err != nil {
-				return nil, fmt.Errorf("failed to read file %s: %w", v.GetPath(), err)
-			}
-
-			if utf8.Valid(content) {
-				src.Text = ptr.Ptr(string(content))
-			} else {
-				src.Raw = content
-			}
-		case v1alpha1.File_plugin:
-			idx := slices.IndexFunc(out.GetFiles(), func(file *v1alpha1.File) bool {
-				return file.GetType() == v1alpha1.File_plugin && file.GetPath() == v.GetPath() &&
-					len(v.GetSource().GetRaw()) > 0
-			})
-			if idx >= 0 {
-				src.FileIndex = ptr.Ptr(int32(idx))
-			} else {
-				tools := toolsProvider()
-				if tools.Err != nil {
-					return nil, fmt.Errorf("file %s: %w", v.GetPath(), tools.Err)
-				}
-
-				abs, err := registryRoot.Abs(v.GetPath())
-				if err != nil {
-					return nil, fmt.Errorf("file %s: %w", v.GetPath(), err)
-				}
-
-				interact.Infof("Building plugin %s", v.GetPath())
-				src.Raw, err = hydratePlugin(ctx, tools, abs, buff)
-				if err != nil {
-					return nil, err
-				}
-				interact.Info("Complete!")
-			}
-		}
-		v.Source = src
-	}
-	return out, nil
-}
-
-func hydratePlugin(ctx context.Context, tools *buildTools, absPath string, buff *bytes.Buffer) ([]byte, error) {
-	err := tools.Builder.Build(ctx, absPath, buff)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = tools.PluginCompiler.Compile(ctx, buff.Bytes(), plugin.CompileOpts{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to compile plugin %s: %w", absPath, err)
-	}
-
-	out := make([]byte, len(buff.Bytes()))
-	copy(out, buff.Bytes())
-	buff.Reset()
-	return out, nil
-}
-
-func WritePackage(pkg *v1alpha1.Package, targetPath string) error {
-	b, err := protoencode.PrettyMarshaller.Marshal(pkg)
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(targetPath, b, fileutil.DefaultFileMode)
 }

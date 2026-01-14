@@ -1,21 +1,16 @@
 {
-  "$schema": "https://raw.githubusercontent.com/skiff-sh/api/refs/heads/main/jsonschema/skiff.registry.v1alpha1.registry.json",
+  "$schema": "https://raw.githubusercontent.com/skiff-sh/api/refs/heads/main/jsonschema/skiff.registry.v1alpha1.Registry.json",
   "name": "my-company",
   "description": "Create opinionated files for your project.",
   "packages": [
     {
       "name": "create-http-route",
       "description": "Creates a new controller and registers it.",
-      "permissions": {
-        "plugin": [
-          "cwd_ro"
-        ]
-      },
       "files": [
         {
           "type": "file",
           "path": "templates/controller.tmpl",
-          "target": "controller/{{.name}}.go"
+          "target": "controller/{{.name | lower}}.go"
         },
         {
           "type": "plugin",

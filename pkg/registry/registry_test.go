@@ -51,7 +51,7 @@ func (r *RegistryTestSuite) TestFileLoader() {
 			regPath := filepath.Join(rootDir, "registry.json")
 			_ = os.WriteFile(regPath, b, fileutil.DefaultFileMode)
 
-			loader := NewFileLoader()
+			loader := NewFileFetcher()
 			actualPkg, err := loader.LoadPackage(r.T().Context(), pkgPath)
 			if v.ExpectedErr != "" || !r.NoError(err) {
 				r.ErrorContains(err, v.ExpectedErr)
@@ -72,7 +72,7 @@ func (r *RegistryTestSuite) TestFileLoader() {
 
 func (r *RegistryTestSuite) TestHTTPLoader() {
 	type test struct {
-		GivenFactory     func() Loader
+		GivenFactory     func() Fetcher
 		ExpectedPackage  *v1alpha1.Package
 		ExpectedRegistry *v1alpha1.Registry
 		PackagePath      string
@@ -83,7 +83,7 @@ func (r *RegistryTestSuite) TestHTTPLoader() {
 		"http": {
 			PackagePath:  "package.com",
 			RegistryPath: "registry.com",
-			GivenFactory: func() Loader {
+			GivenFactory: func() Fetcher {
 				cl := new(registrymocks.HTTPClient)
 				cl.EXPECT().Do(mock.MatchedBy(func(req *http.Request) bool {
 					return req.URL.String() == "package.com"
@@ -92,7 +92,7 @@ func (r *RegistryTestSuite) TestHTTPLoader() {
 				cl.EXPECT().Do(mock.MatchedBy(func(req *http.Request) bool {
 					return req.URL.String() == "registry.com"
 				})).Return(&http.Response{Body: io.NopCloser(bytes.NewBufferString(`{"name": "registry"}`))}, nil)
-				return NewHTTPLoader(cl)
+				return NewHTTPFetcher(cl)
 			},
 			ExpectedPackage:  &v1alpha1.Package{Name: "package"},
 			ExpectedRegistry: &v1alpha1.Registry{Name: "registry"},

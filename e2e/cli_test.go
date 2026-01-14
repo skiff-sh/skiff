@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,6 +18,10 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/x/exp/teatest"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/skiff-sh/skiff/pkg/bufferpool"
+
+	"github.com/skiff-sh/skiff/pkg/registry"
 
 	"github.com/skiff-sh/skiff/pkg/execcmd"
 	"github.com/skiff-sh/skiff/pkg/settings"
@@ -118,11 +123,15 @@ func (c *CliTestSuite) TestBuild() {
 	}
 
 	oldPathLooker := execcmd.DefaultPathLooker
+	oldEnvs := os.Environ()
 	tests := map[string]test{
 		"go controller all files present": {
 			ExampleName: "go-fiber-controller",
 			Expected: func(p *params) {
-				c.ElementsMatch([]string{"registry.json", "create-http-route.json"}, collection.Keys(p.BuildOutputFS))
+				c.ElementsMatch(
+					[]string{"registry.json", "create-http-route.json", "plugins/plugin.wasm"},
+					collection.Keys(p.BuildOutputFS),
+				)
 				c.Len(p.Actual.Packages, 1)
 
 				// Check that the contents are the same as the original.
@@ -136,6 +145,10 @@ func (c *CliTestSuite) TestBuild() {
 		"build with managed go CLI": {
 			ExampleName: "go-fiber-controller",
 			Setup: func() {
+				// We assume the user has home.
+				home := os.Getenv("HOME")
+				os.Clearenv()
+				_ = os.Setenv("HOME", home)
 				execcmd.DefaultPathLooker = execcmd.PathLookerFunc(func(fi string) (string, error) {
 					if fi == "go" || fi == "go.exe" {
 						return "", exec.ErrNotFound
@@ -145,6 +158,12 @@ func (c *CliTestSuite) TestBuild() {
 			},
 			Cleanup: func(buildDir string) {
 				execcmd.DefaultPathLooker = oldPathLooker
+				for _, pair := range oldEnvs {
+					// Environ() returns strings in "KEY=VALUE" format
+					kv := strings.SplitN(pair, "=", 2)
+					_ = os.Setenv(kv[0], kv[1])
+				}
+
 				// For some reason, go deps are installed protected. maybe it's gvm? not 100% sure if this is consistent on linux or windows.
 				out, err := exec.CommandContext(c.T().Context(), "chmod", "-R", "u+w", buildDir).CombinedOutput()
 				if err != nil {
@@ -152,7 +171,10 @@ func (c *CliTestSuite) TestBuild() {
 				}
 			},
 			Expected: func(p *params) {
-				c.ElementsMatch([]string{"registry.json", "create-http-route.json"}, collection.Keys(p.BuildOutputFS))
+				c.ElementsMatch(
+					[]string{"registry.json", "create-http-route.json", "plugins/plugin.wasm"},
+					collection.Keys(p.BuildOutputFS),
+				)
 				c.Len(p.Actual.Packages, 1)
 
 				// Check that the contents are the same as the original.
@@ -200,8 +222,9 @@ func (c *CliTestSuite) TestBuild() {
 				return
 			}
 
-			actualFS := testutil.FlatMapFS(os.DirFS(build.OutputDir))
-			actual, ok := c.unmarshalBuildOutput(actualFS)
+			outputFS := os.DirFS(build.OutputDir)
+			actualFS := testutil.FlatMapFS(outputFS)
+			actual, ok := c.unmarshalBuildOutput(outputFS)
 			if !ok {
 				return
 			}
@@ -242,7 +265,6 @@ func (c *CliTestSuite) TestAdd() {
 				return []string{"--root", b.RootDir, filepath.Join(b.OutputDir, "create-http-route.json")}
 			},
 			Inputs: []testutil.TeaInputs{
-				testutil.Inputs(tea.KeyLeft, tea.KeyEnter), // Grant access.
 				testutil.Inputs(
 					"derp", tea.KeyEnter, // provide the name
 					tea.KeyDown, tea.KeyEnter, // provide the method
@@ -269,30 +291,12 @@ func (c *CliTestSuite) TestAdd() {
 				return []string{
 					"--root",
 					b.RootDir,
-					"-p",
-					"all",
 					"--non-i",
 					filepath.Join(b.OutputDir, "create-http-route.json"),
 				}
 			},
 			Expected: func(p *output) {
 				c.ErrorContains(p.Err, "Required flags")
-			},
-		},
-		"no op if access is denied": {
-			Args: func(b *BuildCmdOutput) []string {
-				return []string{"--root", b.RootDir, filepath.Join(b.OutputDir, "create-http-route.json")}
-			},
-			Inputs: []testutil.TeaInputs{
-				testutil.Inputs(tea.KeyEnter),
-			},
-			Expected: func(p *output) {
-				if !c.NoError(p.Err) {
-					return
-				}
-
-				fp := filepath.Join("controller", "controller.go")
-				c.EqualFiles(p.OriginalExample, fp, p.BuildRoot, fp)
 			},
 		},
 	}
@@ -364,6 +368,56 @@ func (c *CliTestSuite) TestAdd() {
 	}
 }
 
+func (c *CliTestSuite) TestMCP() {
+	ctx := c.T().Context()
+	examples := os.DirFS(ExamplesPath())
+	exaDir, err := CloneExample(examples, "go-fiber-controller")
+	if !c.NoError(err) {
+		return
+	}
+	defer func() {
+		_ = os.RemoveAll(exaDir)
+	}()
+
+	defer c.SetWd(exaDir)()
+
+	build, ok := c.buildExample(exaDir)
+	if !ok {
+		return
+	}
+
+	cmd, err := New()
+	if !c.NoError(err) {
+		return
+	}
+
+	go func() {
+		c.NoError(cmd.Command.Run(ctx, []string{"skiff", "mcp", "--addr", ":8080"}))
+	}()
+
+	codex := exec.CommandContext(
+		ctx,
+		"codex",
+		"-c",
+		"mcp_servers.skiff.url=http://localhost:8080",
+		"-a",
+		"never",
+		"exec",
+		"-s",
+		"workspace-write",
+		"--skip-git-repo-check",
+		"add a route called derp",
+	)
+	codex.Dir = build.RootDir
+	out, err := codex.CombinedOutput()
+	if !c.NoError(err) {
+		return
+	}
+	// TODO: validate that this works by hitting the derp endpoint. Need to validate that the token count is minimized and it shouldn't take very long.
+
+	fmt.Println(string(out))
+}
+
 type BuildCmdOutput struct {
 	OutputDir string
 	RootDir   string
@@ -380,7 +434,7 @@ func (c *CliTestSuite) buildExample(exaDir string, args ...string) (*BuildCmdOut
 
 	buf := bytes.NewBuffer(nil)
 	cmd.Command.CLI.Writer = buf
-	outputDir := filepath.Join("public", "r")
+	outputDir := filepath.Join(exaDir, "public", "r")
 
 	err = cmd.Command.Run(
 		ctx,
@@ -404,32 +458,57 @@ type BuildOutput struct {
 	Registry *v1alpha1.Registry
 	// Filename to contents
 	Packages map[string]*v1alpha1.Package
+	Plugins  []*registry.File
 }
 
-func (c *CliTestSuite) unmarshalBuildOutput(f testutil.MapFS) (*BuildOutput, bool) {
+func (c *CliTestSuite) unmarshalBuildOutput(f fs.FS) (*BuildOutput, bool) {
 	out := &BuildOutput{
 		Registry: new(v1alpha1.Registry),
 		Packages: make(map[string]*v1alpha1.Package),
 	}
 
-	if !c.NotNil(f["registry.json"], "registry.json is missing") {
+	reg, err := fs.ReadFile(f, "registry.json")
+	if !c.NoError(err, "registry.json is missing") {
 		return nil, false
 	}
 
-	err := protoencode.Unmarshaller.Unmarshal(f["registry.json"].Data, out.Registry)
+	err = protoencode.Unmarshaller.Unmarshal(reg, out.Registry)
 	if !c.NoError(err, "failed to unmarshal the registry.json file") {
 		return nil, false
 	}
 
-	for k, v := range f {
-		if k == "registry.json" {
+	files, err := fs.ReadDir(f, ".")
+	if !c.NoError(err) {
+		return nil, false
+	}
+
+	for _, v := range files {
+		if v.Name() == "registry.json" || v.IsDir() {
 			continue
 		}
-		out.Packages[k] = new(v1alpha1.Package)
-		err = protoencode.Unmarshaller.Unmarshal(v.Data, out.Packages[k])
-		if !c.NoError(err, "failed to unmarshal package %s", k) {
+		out.Packages[v.Name()] = new(v1alpha1.Package)
+		con, err := fs.ReadFile(f, v.Name())
+		if !c.NoError(err, "failed to read package", v.Name()) {
 			return nil, false
 		}
+
+		err = protoencode.Unmarshaller.Unmarshal(con, out.Packages[v.Name()])
+		if !c.NoError(err, "failed to unmarshal package %s", v.Name()) {
+			return nil, false
+		}
+	}
+
+	plugins, _ := fs.ReadDir(f, "plugins")
+	out.Plugins = make([]*registry.File, 0, len(plugins))
+	for _, v := range plugins {
+		fp := filepath.Join("plugins", v.Name())
+		content, _ := fs.ReadFile(f, fp)
+		buff := bufferpool.GetBytesBuffer()
+		buff.Write(content)
+		out.Plugins = append(out.Plugins, &registry.File{
+			Path:    fp,
+			Content: buff,
+		})
 	}
 
 	return out, true

@@ -3,14 +3,19 @@ package commands
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"slices"
 	"strings"
 
-	"github.com/skiff-sh/api/go/skiff/registry/v1alpha1"
 	"github.com/urfave/cli/v3"
 
-	"github.com/skiff-sh/skiff/pkg/collection"
+	"github.com/skiff-sh/skiff/pkg/engine"
+	"github.com/skiff-sh/skiff/pkg/plugin"
+	"github.com/skiff-sh/skiff/pkg/tmpl"
+
+	"github.com/skiff-sh/skiff/pkg/vars"
+
 	"github.com/skiff-sh/skiff/pkg/system"
 
 	"github.com/skiff-sh/skiff/pkg/filesystem"
@@ -19,6 +24,7 @@ import (
 type RootCommand struct {
 	ProjectRoot string
 	CLI         *cli.Command
+	System      system.System
 }
 
 func NewCommand(projectRoot string) *RootCommand {
@@ -98,8 +104,9 @@ Global options:{{template "visiblePersistentFlagTemplate" .}}{{end}}
 		cli.DefaultPrintHelpCustom(w, templ, data, customFunc)
 	}
 
+	sys := system.New()
 	cmd := &cli.Command{
-		Name:  "skiff",
+		Name:  vars.AppName,
 		Usage: "Share and reuse code in an LLM-friendly way.",
 		Commands: []*cli.Command{
 			{
@@ -124,12 +131,39 @@ Global options:{{template "visiblePersistentFlagTemplate" .}}{{end}}
 					})
 				},
 			},
+			{
+				Name:  "mcp",
+				Usage: "MCP server",
+				Flags: []cli.Flag{
+					MCPFlagRoot,
+					MCPFlagAddr,
+				},
+				Action: func(ctx context.Context, command *cli.Command) error {
+					projectPath := command.String(MCPFlagRoot.Name)
+					if projectPath == "" {
+						projectPath = sys.CWD()
+					}
+
+					compiler, err := plugin.NewWazeroCompiler()
+					if err != nil {
+						return fmt.Errorf("failed to create WASM compiler: %w", err)
+					}
+
+					bc := NewMCPAction(compiler, sys)
+
+					return bc.Act(ctx, &MCPActionArgs{
+						ProjectRoot: filesystem.New(projectPath),
+						Address:     command.String(MCPFlagAddr.Name),
+					})
+				},
+			},
 		},
 	}
 
 	return &RootCommand{
 		ProjectRoot: projectRoot,
 		CLI:         cmd,
+		System:      sys,
 	}
 }
 
@@ -152,7 +186,6 @@ func newAddCmd(ctx context.Context, args []string) (*cli.Command, error) {
 			AddFlagNonInteractive,
 			AddFlagCreateAll,
 			AddFlagRoot,
-			AddFlagPermissions,
 		},
 		Arguments: []cli.Argument{
 			AddArgPackages,
@@ -207,14 +240,17 @@ func newAddCmd(ctx context.Context, args []string) (*cli.Command, error) {
 			}
 		}
 
-		perms := command.StringSlice(AddFlagPermissions.Name)
+		compiler, err := plugin.NewWazeroCompiler()
+		if err != nil {
+			return fmt.Errorf("failed to create WASM compiler: %w", err)
+		}
 
-		err := act.Act(ctx, &AddArgs{
-			ProjectRoot: filesystem.New(root),
+		fsys := filesystem.New(root)
+
+		err = act.Act(ctx, &AddArgs{
+			ProjectRoot: fsys,
+			Engine:      engine.New(tmpl.NewGoFactory(), compiler, system.New(), fsys),
 			CreateAll:   command.Bool(AddFlagCreateAll.Name),
-			GrantedPerms: collection.Map(perms, func(e string) v1alpha1.PackagePermissions_Plugin {
-				return v1alpha1.PackagePermissions_Plugin(v1alpha1.PackagePermissions_Plugin_value[e])
-			}),
 		})
 		if err != nil {
 			if errors.Is(err, ErrSchema) {
